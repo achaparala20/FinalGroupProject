@@ -4,26 +4,83 @@ output: html_document
 date: "2023-12-06"
 ---
 
+#load packages
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(googledrive)
+library(tidymodels)
+library(caret)
+library(rpart)
+library(dplyr)
+library(recipes)
+library(patchwork)
+library(yardstick)
+library(parsnip)
+library(vip)
 ```
 
-## R Markdown
+#load datasets
+```{r}
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+#nightlight (viirs) data
+viirs_drive <- drive_download(file = "viirs_annual_shrid.csv", overwrite = TRUE)
+viirs_data <- read_csv("viirs_annual_shrid.csv")
+file.remove("viirs_annual_shrid.csv")
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+#filter viirs data to 2012, keep average values (not median values)
+viirs_data <- viirs_data %>%
+  filter(year == 2012) %>%
+  filter(category == "average-masked")
 
-```{r cars}
-summary(cars)
+#poverty + consumption data 
+secc_cons_drive <- drive_download(file = "secc_cons_rural_shrid1.csv", overwrite = TRUE)
+secc_cons <- read_csv("secc_cons_rural_shrid1.csv")
+file.remove("secc_cons_rural_shrid1.csv")
+
+#social and economic caste census data
+secc_caste_drive <- drive_download(file = "secc_rural_shrid.csv", overwrite = TRUE)
+secc_caste <- read_csv("secc_rural_shrid.csv")
+file.remove("secc_rural_shrid.csv")
+
+#census abstract data (2011)
+census_abstract_drive <- drive_download(file = "census_abstract.csv", overwrite = TRUE)
+census_abstract <- read_csv("census_abstract.csv")
+file.remove("census_abstract.csv")
+
+#remove intermediate dfs
+rm(viirs_drive)
+rm(secc_cons_drive)
+rm(secc_caste_drive)
+rm(census_abstract_drive)
+
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+#parse dataframes
+```{r}
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+#viirs
+viirs_data <- viirs_data %>%
+  mutate(shrid2_clone = shrid2) %>%
+  separate(shrid2_clone, into = c("YY", "SS", "DDD", "sssss", "TTTTTT"), sep = "-", extra = "merge") 
+
+#secc_cons
+secc_cons <- secc_cons %>%
+  mutate(shrid2_clone = shrid2) %>%
+  separate(shrid2_clone, into = c("YY", "SS", "DDD", "sssss", "TTTTTT"), sep = "-", extra = "merge") 
+
+#secc_caste
+secc_caste <- secc_caste %>%
+  mutate(shrid2_clone = shrid2) %>%
+  separate(shrid2_clone, into = c("YY", "SS", "DDD", "sssss", "TTTTTT"), sep = "-", extra = "merge") 
+
+#census abstract
+census_abstract <- census_abstract %>%
+  mutate(shrid2_clone = shrid2) %>%
+  separate(shrid2_clone, into = c("YY", "SS", "DDD", "sssss", "TTTTTT"), sep = "-", extra = "merge") 
+
+
+
+
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
