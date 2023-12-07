@@ -90,13 +90,10 @@ census_abstract <- census_abstract %>%
 #madhya pradesh
 viirs_data_mp <- viirs_data %>%
   filter(SS == 23)
-
 secc_cons_mp <- secc_cons %>%
   filter(SS == 23)
-
 secc_caste_mp <- secc_caste %>%
   filter(SS == 23)
-
 census_abstract_mp <- census_abstract %>%
   filter(SS == 23)
 
