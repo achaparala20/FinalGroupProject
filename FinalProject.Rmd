@@ -105,7 +105,18 @@ madhya_pradesh <- mp_list %>%
 
 #assam
 viirs_data_as <- viirs_data %>%
-  filter(SS == )
+  filter(SS == 18)
+secc_cons_as <- secc_cons %>%
+  filter(SS == 18)
+secc_caste_as <- secc_caste %>%
+  filter(SS == 18)
+census_abstract_as <- census_abstract %>%
+  filter(SS == 18)
+
+#merge assam data-frames
+as_list <- list(viirs_data_as, secc_cons_as, secc_caste_as, census_abstract_as) #put all data frames into list   
+assam <- as_list %>% 
+  reduce(full_join, by='TTTTTT') #merge all data frames together
 
 
 
