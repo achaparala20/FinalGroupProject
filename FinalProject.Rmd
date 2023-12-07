@@ -80,6 +80,37 @@ census_abstract <- census_abstract %>%
   mutate(shrid2_clone = shrid2) %>%
   separate(shrid2_clone, into = c("YY", "SS", "DDD", "sssss", "TTTTTT"), sep = "-", extra = "merge") 
 
+```
+
+#merge dataframes
+```{r}
+
+#create state-specific versions of all four dataframes:
+
+#madhya pradesh
+viirs_data_mp <- viirs_data %>%
+  filter(SS == 23)
+
+secc_cons_mp <- secc_cons %>%
+  filter(SS == 23)
+
+secc_caste_mp <- secc_caste %>%
+  filter(SS == 23)
+
+census_abstract_mp <- census_abstract %>%
+  filter(SS == 23)
+
+#merge madhya pradesh data-frames
+mp_list <- list(viirs_data_mp, secc_cons_mp, secc_caste_mp, census_abstract_mp) #put all data frames into list   
+madhya_pradesh <- mp_list %>% 
+  reduce(full_join, by='TTTTTT') #merge all data frames together
+
+
+#assam
+viirs_data_as <- viirs_data %>%
+  filter(SS == )
+
+
 
 
 
