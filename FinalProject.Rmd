@@ -20,6 +20,33 @@ library(parsnip)
 library(vip)
 install.packages("GGally")
 library(GGally)
+library(sf)
+library(sf)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(tidycensus)
+library(httr)
+library(jsonlite)
+library(dotenv)
+library(here)
+library(testthat)
+library(purrr)
+library(roxygen2)
+library(codetools)
+library(tidymodels)
+library(ggplot2)
+library(vip)
+library(GGally)
+library(rgdal)
+library(caret)
+library(yardstick)
+library(broom)
+library(magrittr)
+library(dplyr)
+library(randomForest)
+library(parsnip)
+library(rpart.plot)
 ```
 
 #load datasets
@@ -135,29 +162,38 @@ mp_test <- testing(x = mp_split)
 
 ```
 
-#madhya pradesh: exploratory data analysis w/ training dataset
-```{r}
-#Graph: Poverty Rate vs Night Lights (MP)
+#madhya pradesh: data visualization w/ training dataset
+```{r - Data Visualization (MP)}
+#Graph 1: Histogram of Poverty Rate (MP)
+ggplot(mp_train, aes(x=secc_pov_rate_rural)) + 
+  geom_histogram() +
+  geom_vline(xintercept = mean(mp_train$secc_pov_rate_rural), col = "red") +
+  xlab("Percent of Rural Households Below Poverty Rate") +
+  ylab("Count") +
+  labs(title = "Rural Poverty Rate Distribution, Madhya Pradesh (Shrid-Level)")
+
+
+#Graph 2: Poverty Rate vs Night Lights (MP)
 mp_train %>%
   ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) +
   geom_point(alpha = 0.25) +
-  labs(title = "Poverty rate vs. Night Light in Madhya Pradesh", 
+  labs(title = "Poverty rate vs. Night Light, Madhya Pradesh", 
        subtitle = "(Source: Socioeconomic & Caste Census 2011, VIIRS Night Lights 2012)") +
   xlab("Average Annual Night Light in Shrid") +
   ylab("Percent of Rural Households Below Poverty Line") +
   theme_minimal()
 
-#Graph: Poverty Rate vs. Middle School Education (MP)
+#Graph 3: Poverty Rate vs. Middle School Education (MP)
 mp_train %>%
   ggplot(aes(x = ed_mid_share, y = secc_pov_rate_rural)) +
   geom_smooth(alpha = 0.5) +
-  labs(title = "Level of Education vs. Poverty rate in Madhya Pradesh", 
+  labs(title = "Level of Education vs. Poverty rate, Madhya Pradesh", 
        subtitle = "(Source: Socioeconomic & Caste Census 2011-2012)") +
   xlab("Share of Rural Population with Middle School Education") +
   ylab("Percent of Rural Households Below Poverty Line") +
   theme_minimal()
 
-#Graph: Poverty Rate by Proportion of Population that is SC/ST
+#Graph 4: Poverty Rate by Proportion of Population that is SC/ST
 
 #create SC/ST proportion variable -- create duplicate train_EDA so as to not add extra columns to training df which are not present in test df
 mp_train_EDA <- mp_train %>%
@@ -171,11 +207,11 @@ theme_linedraw() +
 labs(
   x = "Proportion of Scheduled Caste/Tribe Proportion (Shrid)",
   y = "Percent of Rural Households Below Poverty Line",
-  title = "Poverty Rate by Schedule Caste/Tribe Population Proportion",
+  title = "Poverty Rate by Schedule Caste/Tribe Population Proportion, Madhya Pradesh",
   subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
 )
 
-#Graph: Poverty Rate by Literacy Rate
+#Graph 5: Poverty Rate by Literacy Rate
 #create total literacy rate variable
 mp_train_EDA <- mp_train %>%
   mutate(lit_rate = (pc11_pca_p_lit) / pc11_pca_tot_p)
@@ -188,8 +224,41 @@ theme_linedraw() +
 labs(
   x = "Literate Proportion of Population",
   y = "Poverty Rate",
-  title = "Poverty Rate by Litercy Rate",
+  title = "Poverty Rate by Litercy Rate, Madhya Pradesh",
   subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
 )
+
+#Graph 6: Poverty Rate by Proportion of Agricultural Employment
+
+#create var for proportion of workers who are cultivators
+mp_train_EDA <- mp_train %>%
+  mutate(ag_prop = pc11_pca_main_cl_p/pc11_pca_tot_work_p)
+
+#graph
+mp_train_EDA %>%
+ggplot(aes(x = ag_prop, y = secc_pov_rate_rural)) +
+geom_smooth(alpha = 0.5) +
+theme_linedraw() +
+labs(
+  x = "Proportion of Workers who are Cultivators",
+  y = "Poverty Rate",
+  title = "Poverty Rate by Agricultural Employment, Madhya Pradesh",
+  subtitle = "((Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
+)
+```
+
+#madhya pradesh: geospatial analysis
+```{r}
+
+#Reading in shrid shape file
+shrid <- st_read("raw data/shrid2_open.shp", quiet = TRUE)
+shrid <- st_transform(shrid, crs = 4326)
+
+#Merging sf file into madhya_pradesh
+madhya_pradesh_sf <- merge(madhya_pradesh, shrid, by = c("shrid2.x"))
+
+#Converting data
+madhya_pradesh_sf <- st_as_sf(madhya_pradesh_sf)
+ 
 
 ```
