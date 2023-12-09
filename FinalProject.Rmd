@@ -18,6 +18,8 @@ library(patchwork)
 library(yardstick)
 library(parsnip)
 library(vip)
+install.packages("GGally")
+library(GGally)
 ```
 
 #load datasets
@@ -82,7 +84,7 @@ census_abstract <- census_abstract %>%
 
 ```
 
-#merge dataframes
+#create merged dataframes for each state
 ```{r}
 
 #create state-specific versions of all four dataframes:
@@ -102,7 +104,6 @@ mp_list <- list(viirs_data_mp, secc_cons_mp, secc_caste_mp, census_abstract_mp) 
 madhya_pradesh <- mp_list %>% 
   reduce(full_join, by='TTTTTT') #merge all data frames together
 
-
 #assam
 viirs_data_as <- viirs_data %>%
   filter(SS == 18)
@@ -117,9 +118,41 @@ census_abstract_as <- census_abstract %>%
 as_list <- list(viirs_data_as, secc_cons_as, secc_caste_as, census_abstract_as) #put all data frames into list   
 assam <- as_list %>% 
   reduce(full_join, by='TTTTTT') #merge all data frames together
+```
 
+#madhya pradesh: data cleaning / ML set-up
 
+```{r}
+#filter to 2012
+madhya_pradesh <- madhya_pradesh %>%
+  filter(year == 2012)
 
+#create testing and training datasets 
+set.seed(12152023)
+mp_split <- initial_split(data = madhya_pradesh, prop = 0.7)
+mp_train <- training(x = mp_split)
+mp_test <- testing(x = mp_split)
 
+```
+
+#madhya pradesh: exploratory data analysis w/ training dataset
+```{r}
+#Poverty Rate vs Night Lights (MP)
+mp_train %>%
+  ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) +
+  geom_point(alpha = 0.25) +
+  labs(title = "Poverty rate vs. Night Light in Madhya Pradesh") +
+  xlab("Average Annual Night Light in Shrid") +
+  ylab("Estimated Share of Rural Households Below Poverty Line") +
+  theme_minimal()
+
+#Poverty Rate vs. Middle School Education (MP)
+mp_train %>%
+  ggplot(aes(x = ed_mid_share, y = secc_pov_rate_rural)) +
+  geom_smooth(alpha = 0.5) +
+  labs(title = "Level of Education vs. Poverty rate in Assam") +
+  xlab("Share of Rural Population with Middle School Edcuation") +
+  ylab("Estimated share of rural households Below Poverty Line") +
+  theme_minimal()
 
 ```
