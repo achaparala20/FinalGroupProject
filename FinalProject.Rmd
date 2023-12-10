@@ -265,14 +265,14 @@ Madhya Pradesh: Model 1 - CART
 
 ```{r}
 #Coming up with a recipe for all the Madhya Pradesh models
-mp_rec <- recipe(formula = secc_pov_rate_rural ~ ., 
-                 data = mp_train) %>%
+mp_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = mp_train) %>%
   step_zv(all_predictors()) %>%
-  step_select(all_numeric())
+  step_select(all_numeric()) %>%
   step_center(all_predictors()) %>%
   step_scale(all_predictors()) %>%
   prep()
 ```
+
 
 ```{r}
 #setting seed and v-fold cross-validation
