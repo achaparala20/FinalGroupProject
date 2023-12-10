@@ -18,7 +18,6 @@ library(patchwork)
 library(yardstick)
 library(parsnip)
 library(vip)
-install.packages("GGally")
 library(GGally)
 library(sf)
 library(sf)
@@ -38,7 +37,6 @@ library(tidymodels)
 library(ggplot2)
 library(vip)
 library(GGally)
-library(rgdal)
 library(caret)
 library(yardstick)
 library(broom)
@@ -261,4 +259,173 @@ madhya_pradesh_sf <- merge(madhya_pradesh, shrid, by = c("shrid2.x"))
 madhya_pradesh_sf <- st_as_sf(madhya_pradesh_sf)
  
 
+```
+
+Madhya Pradesh: Model 1 - CART 
+
+```{r}
+#Coming up with a recipe for all the Madhya Pradesh models
+mp_rec <- recipe(formula = secc_pov_rate_rural ~ ., 
+                 data = mp_train) %>%
+  step_zv(all_predictors()) %>%
+  step_select(all_numeric())
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors()) %>%
+  prep()
+```
+
+```{r}
+#setting seed and v-fold cross-validation
+set.seed(04281998)
+folds <- vfold_cv(data = mp_train, v = 10, repeats = 1) 
+```
+
+```{r}
+#coming up with a cart mod
+cart_mod <-
+  decision_tree() %>%
+  set_engine(engine = "rpart") %>%
+  set_mode(mode = "regression")
+
+#Creating workflow 
+cart_wf <- workflow() %>%
+  add_recipe(mp_rec) %>%
+  add_model(cart_mod)
+
+#Fitting the model
+cart_fit <- cart_wf %>%
+  fit(data = mp_train)
+
+#Creating a tree
+tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit)
+
+```
+
+```{r}
+#plotting vip
+cart_fit %>%
+extract_fit_parsnip() %>%
+vip(num_features = 10)
+
+```
+
+Model 2: Linear Regression 
+```{r}
+#create model object
+lm_mod <- linear_reg() %>%
+  set_engine("lm")
+
+# create a workflow
+lm_wf <- workflow() %>%
+  add_recipe(mp_rec) %>%
+  add_model(lm_mod) 
+
+#function needed to extract coefficients
+get_lm_coefs <- function(x) {
+  
+  x %>% 
+    extract_fit_engine() %>% 
+    tidy()
+  
+}
+
+tidy_ctrl <- control_grid(extract = get_lm_coefs)
+
+#fit 
+lm_cv <- lm_wf %>%
+  fit_resamples(resamples = folds, control = tidy_ctrl)
+
+#measure RMSE 
+collect_metrics(lm_cv, summarize = FALSE) %>%
+ filter(.metric == "rmse") %>%
+ ggplot(aes(id, .estimate, group = .estimator)) +
+ geom_line() +
+ geom_point() +
+ scale_y_continuous(limits = c(0, 0.5)) +
+ labs(title = "Calculated RMSE Across the 10 Folds",
+ y = "RMSE_hat") +
+ theme_minimal()
+
+
+
+```
+
+```{R}
+#collecting metrics
+metric_table_lm <- collect_metrics(lm_cv, summarize = TRUE)
+metric_table_lm %>%
+  filter(.metric == "rmse")
+```
+
+```{r}
+#Getting coefficients
+lm_coefs <- lm_cv %>% 
+  select(id, .extracts) %>% 
+  unnest(.extracts)  %>% 
+  unnest(.extracts)
+
+#Getting coefficients for night light
+lm_coefs %>%
+  filter(term == "viirs_annual_mean")
+```
+
+
+Model 3: LASSO
+```{r}
+#Lasso model
+lasso_grid <- grid_regular(penalty(), levels = 10)
+
+lasso_mod <- linear_reg(
+  penalty = tune(), 
+  mixture = 1,
+) %>%
+  set_engine("glmnet")
+
+#creating wf
+lasso_wf <- workflow() %>%
+  add_recipe(mp_rec) %>%
+  add_model(lasso_mod) 
+
+#fitting wf 
+lasso_cv <- lasso_wf %>%
+  tune_grid(
+    resamples = folds,
+    grid = lasso_grid)
+
+lasso_best <- lasso_cv %>%
+  select_best(metric = "rmse")
+
+#finalizing first wf 
+lasso_final <- finalize_workflow(
+  lasso_wf,
+  parameters = lasso_best
+)
+
+lasso_coefs <- lasso_final %>%
+  fit(data = train) %>%
+  extract_fit_parsnip() %>%
+  vi(lambda = lasso_best$penalty) 
+
+
+#Coefficients for night light
+lasso_coefs %>%
+  filter(term == "viirs_annual_mean") %>%
+  filter(step == 10)
+
+```
+
+```{r}
+#fitting LASSO on testing data 
+lasso_fit <- lasso_final %>%
+  fit(data = mp_test)
+
+#create predictions df
+predictions_lasso <-
+  bind_cols(
+    test,
+    stats::predict(object = lasso_fit, new_data = mp_test)
+  )
+
+# calculate the rmse on the testing data: 
+rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 ```
