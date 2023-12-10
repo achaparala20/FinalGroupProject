@@ -264,6 +264,11 @@ madhya_pradesh_sf <- st_as_sf(madhya_pradesh_sf)
 Madhya Pradesh: Model 1 - CART 
 
 ```{r}
+# Filter only numeric columns, dropping missing values
+mp_train <- mp_train %>%
+  select_if(is.numeric) %>%
+  na.omit()
+
 #Coming up with a recipe for all the Madhya Pradesh models
 mp_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = mp_train) %>%
   step_zv(all_predictors()) %>%
