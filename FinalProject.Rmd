@@ -222,17 +222,29 @@ as_test <-
 plot1 <- ggplot(mp_train, aes(x=secc_pov_rate_rural)) + 
   geom_histogram() +
   geom_vline(xintercept = mean(mp_train$secc_pov_rate_rural, na.rm = TRUE), col = "red") +
-  xlab("Percent of Rural Households Below Poverty Rate") +
+  xlab("% of Shrid Households in Poverty") +
   ylab("Count") +
-  labs(title = "Rural Poverty Rate Distribution, Madhya Pradesh (Shrid-Level)")
+  labs(title = "Rural Poverty Distribution, Madhya Pradesh") +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  )
 
 #Assam
 plot2 <- ggplot(as_train, aes(x=secc_pov_rate_rural)) + 
   geom_histogram() +
   geom_vline(xintercept = mean(as_train$secc_pov_rate_rural, na.rm = TRUE), col = "red") +
-  xlab("Percent of Rural Households Below Poverty Rate") +
+  xlab("% of Shrid Households in Poverty") +
   ylab("Count") +
-  labs(title = "Rural Poverty Rate Distribution, Assam (Shrid-Level)")
+  labs(title = "Rural Poverty Distribution, Assam") +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  )
 
 #side-by-side
 plot_combined <- plot1 + plot2
@@ -241,24 +253,33 @@ plot_combined
 #Poverty Rate vs Night Lights 
 
 #Madhya Pradesh
+
 plot3 <- mp_train %>%
-  ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) +
+  ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) + 
   geom_point(alpha = 0.25) +
-  labs(title = "Poverty rate vs. Night Light, Madhya Pradesh", 
-       subtitle = "(Source: Socioeconomic & Caste Census 2011, VIIRS Night Lights 2012)") +
-  xlab("Average Annual Night Light in Shrid") +
-  ylab("Percent of Rural Households Below Poverty Line") +
-  theme_minimal()
+  labs(title = "Shrid Poverty Rate vs. Night Light, Madhya Pradesh",  
+       xlab("Average Night Light Radiance (nW/cm^2/sr)"),
+       ylab("% of Shrid Households in Poverty")) +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  )
 
 #Assam
 plot4 <- as_train %>%
-  ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) +
+   ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) + 
   geom_point(alpha = 0.25) +
-  labs(title = "Poverty rate vs. Night Light, Assam", 
-       subtitle = "(Source: Socioeconomic & Caste Census 2011, VIIRS Night Lights 2012)") +
-  xlab("Average Annual Night Light in Shrid") +
-  ylab("Percent of Rural Households Below Poverty Line") +
-  theme_minimal()
+  labs(title = "Shrid Poverty Rate vs. Night Light, Assam",  
+       xlab("Average Night Light Radiance (nW/cm^2/sr)"),
+       ylab("% of Shrid Households in Poverty")) +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  )
 
 #side-by-side
 plot_combined <- plot3 + plot4
