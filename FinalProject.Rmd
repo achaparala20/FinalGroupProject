@@ -45,6 +45,7 @@ library(dplyr)
 library(randomForest)
 library(parsnip)
 library(rpart.plot)
+library(patchwork)
 ```
 
 ```{r}
@@ -167,9 +168,7 @@ print(is_na_madhya_pradesh)
 #There are missing values 
 any_missing_madhya_pradesh <- any(is.na(madhya_pradesh))
 print(any_missing_madhya_pradesh)
-```
 
-```{r}
 #filter to 2012
 madhya_pradesh <- madhya_pradesh %>%
   filter(year == 2012)
@@ -179,21 +178,70 @@ set.seed(12152023)
 mp_split <- initial_split(data = madhya_pradesh, prop = 0.7)
 mp_train <- training(x = mp_split)
 mp_test <- testing(x = mp_split)
+
+#dropping missing values (MP)
+mp_train <-
+  mp_train %>%
+  na.omit()
+
+#dropping missing values (MP)
+mp_test <-
+  mp_test %>%
+  na.omit()
 ```
 
-#madhya pradesh: data visualization w/ training dataset
-```{r - Data Visualization (MP)}
-#Graph 1: Histogram of Poverty Rate (MP)
-ggplot(mp_train, aes(x=secc_pov_rate_rural)) + 
+#Assam: Data cleaning / ML set-up
+```{r}
+#filter to 2012
+#assam_v3 <- assam_v2 %>%
+#  filter(year == 2012)
+
+#create testing and training datasets 
+set.seed(12152023)
+as_split <- initial_split(data = assam, prop = 0.7)
+as_train <- training(x = as_split)
+as_test <- testing(x = as_split)
+
+#dropping missing values (assam)
+as_train <-
+  as_train %>%
+  na.omit()
+
+#dropping missing values (assam)
+as_test <-
+  as_test %>%
+  na.omit()
+```
+
+#Data visualization w/ training dataset
+```{r - Data Visualization}
+
+#Histograms of Poverty Rate by State
+
+#Madhya Pradesh
+plot1 <- ggplot(mp_train, aes(x=secc_pov_rate_rural)) + 
   geom_histogram() +
   geom_vline(xintercept = mean(mp_train$secc_pov_rate_rural, na.rm = TRUE), col = "red") +
   xlab("Percent of Rural Households Below Poverty Rate") +
   ylab("Count") +
   labs(title = "Rural Poverty Rate Distribution, Madhya Pradesh (Shrid-Level)")
 
+#Assam
+plot2 <- ggplot(as_train, aes(x=secc_pov_rate_rural)) + 
+  geom_histogram() +
+  geom_vline(xintercept = mean(as_train$secc_pov_rate_rural, na.rm = TRUE), col = "red") +
+  xlab("Percent of Rural Households Below Poverty Rate") +
+  ylab("Count") +
+  labs(title = "Rural Poverty Rate Distribution, Assam (Shrid-Level)")
 
-#Graph 2: Poverty Rate vs Night Lights (MP)
-mp_train %>%
+#side-by-side
+plot_combined <- plot1 + plot2
+plot_combined
+
+#Poverty Rate vs Night Lights 
+
+#Madhya Pradesh
+plot3 <- mp_train %>%
   ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) +
   geom_point(alpha = 0.25) +
   labs(title = "Poverty rate vs. Night Light, Madhya Pradesh", 
@@ -202,8 +250,24 @@ mp_train %>%
   ylab("Percent of Rural Households Below Poverty Line") +
   theme_minimal()
 
-#Graph 3: Poverty Rate vs. Middle School Education (MP)
-mp_train %>%
+#Assam
+plot4 <- as_train %>%
+  ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) +
+  geom_point(alpha = 0.25) +
+  labs(title = "Poverty rate vs. Night Light, Assam", 
+       subtitle = "(Source: Socioeconomic & Caste Census 2011, VIIRS Night Lights 2012)") +
+  xlab("Average Annual Night Light in Shrid") +
+  ylab("Percent of Rural Households Below Poverty Line") +
+  theme_minimal()
+
+#side-by-side
+plot_combined <- plot3 + plot4
+plot_combined
+
+#Poverty Rate vs. Middle School Education 
+
+#Madhya Pradesh
+plot5 <- mp_train %>%
   ggplot(aes(x = ed_mid_share, y = secc_pov_rate_rural)) +
   geom_smooth(alpha = 0.5) +
   labs(title = "Level of Education vs. Poverty rate, Madhya Pradesh", 
@@ -212,14 +276,30 @@ mp_train %>%
   ylab("Percent of Rural Households Below Poverty Line") +
   theme_minimal()
 
-#Graph 4: Poverty Rate by Proportion of Population that is SC/ST
+#Assam
+plot6 <- as_train %>%
+  ggplot(aes(x = ed_mid_share, y = secc_pov_rate_rural)) +
+  geom_smooth(alpha = 0.5) +
+  labs(title = "Level of Education vs. Poverty rate, Assam", 
+       subtitle = "(Source: Socioeconomic & Caste Census 2011-2012)") +
+  xlab("Share of Rural Population with Middle School Education") +
+  ylab("Percent of Rural Households Below Poverty Line") +
+  theme_minimal()
+
+#side-by-side
+plot_combined <- plot5 + plot6
+plot_combined
+
+#Poverty Rate by Proportion of Population that is SC/ST
 
 #create SC/ST proportion variable -- create duplicate train_EDA so as to not add extra columns to training df which are not present in test df
 mp_train_EDA <- mp_train %>%
   mutate(sched_prop = (pc11_pca_p_sc + pc11_pca_p_st) / pc11_pca_tot_p)
+as_train_EDA <- as_train %>%
+  mutate(sched_prop = (pc11_pca_p_sc + pc11_pca_p_st) / pc11_pca_tot_p)
 
-#graph
-mp_train_EDA %>%
+#Madhya Pradesh
+plot7 <- mp_train_EDA %>%
 ggplot(aes(x = sched_prop, y = secc_pov_rate_rural)) +
 geom_smooth(alpha = 0.5) +
 theme_linedraw() +
@@ -230,13 +310,32 @@ labs(
   subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
 )
 
-#Graph 5: Poverty Rate by Literacy Rate
+#Assam
+plot8 <- as_train_EDA %>%
+ggplot(aes(x = sched_prop, y = secc_pov_rate_rural)) +
+geom_smooth(alpha = 0.5) +
+theme_linedraw() +
+labs(
+  x = "Proportion of Scheduled Caste/Tribe Proportion (Shrid)",
+  y = "Percent of Rural Households Below Poverty Line",
+  title = "Poverty Rate by Schedule Caste/Tribe Population Proportion, Assam",
+  subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
+)
+
+#side-by-side
+plot_combined <- plot7 + plot8
+plot_combined
+
+
+#Poverty Rate by Literacy Rate
 #create total literacy rate variable
 mp_train_EDA <- mp_train %>%
   mutate(lit_rate = (pc11_pca_p_lit) / pc11_pca_tot_p)
+as_train_EDA <- as_train %>%
+  mutate(lit_rate = (pc11_pca_p_lit) / pc11_pca_tot_p)
 
-#graph 
-mp_train_EDA %>%
+#Madhya Pradesh
+plot9 <- mp_train_EDA %>%
 ggplot(aes(x = lit_rate, y = secc_pov_rate_rural)) +
 geom_smooth(alpha = 0.5) +
 theme_linedraw() +
@@ -247,14 +346,33 @@ labs(
   subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
 )
 
-#Graph 6: Poverty Rate by Proportion of Agricultural Employment
+#Assam
+plot10 <- as_train_EDA %>%
+ggplot(aes(x = lit_rate, y = secc_pov_rate_rural)) +
+geom_smooth(alpha = 0.5) +
+theme_linedraw() +
+labs(
+  x = "Literate Proportion of Population",
+  y = "Poverty Rate",
+  title = "Poverty Rate by Literacy Rate, Assam",
+  subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
+)
+
+#side-by-side
+plot_combined <- plot9 + plot10
+plot_combined
+
+
+#Poverty Rate by Proportion of Agricultural Employment
 
 #create var for proportion of workers who are cultivators
 mp_train_EDA <- mp_train %>%
   mutate(ag_prop = pc11_pca_main_cl_p/pc11_pca_tot_work_p)
+as_train_EDA <- as_train %>%
+  mutate(ag_prop = pc11_pca_main_cl_p/pc11_pca_tot_work_p)
 
-#graph
-mp_train_EDA %>%
+#Madhya Pradesh
+plot11 <- mp_train_EDA %>%
 ggplot(aes(x = ag_prop, y = secc_pov_rate_rural)) +
 geom_smooth(alpha = 0.5) +
 theme_linedraw() +
@@ -264,6 +382,22 @@ labs(
   title = "Poverty Rate by Agricultural Employment, Madhya Pradesh",
   subtitle = "((Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
 )
+
+#Assam
+plot12 <- as_train_EDA %>%
+ggplot(aes(x = ag_prop, y = secc_pov_rate_rural)) +
+geom_smooth(alpha = 0.5) +
+theme_linedraw() +
+labs(
+  x = "Proportion of Workers who are Cultivators",
+  y = "Poverty Rate",
+  title = "Poverty Rate by Agricultural Employment, Assam",
+  subtitle = "((Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
+)
+
+#side-by-side
+plot_combined <- plot11 + plot12
+plot_combined
 ```
 
 #madhya pradesh: geospatial analysis
@@ -282,114 +416,6 @@ madhya_pradesh_sf <- st_as_sf(madhya_pradesh_sf)
 
 ```
 
-#Assam: data cleaning / ML set-up
-```{r}
-#filter to 2012
-#assam_v3 <- assam_v2 %>%
-#  filter(year == 2012)
-
-#create testing and training datasets 
-set.seed(12152023)
-as_split <- initial_split(data = assam, prop = 0.7)
-as_train <- training(x = as_split)
-as_test <- testing(x = as_split)
-```
-
-```{r}
-#dropping missing values (assam)
-as_train <-
-  as_train %>%
-  na.omit()
-
-#dropping missing values (assam)
-as_test <-
-  as_test %>%
-  na.omit()
-```
-
-#Assam: data visualization w/ training dataset
-```{r - Data Visualization (Assam)}
-#Graph 1: Histogram of Poverty Rate (Assam)
-ggplot(as_train, aes(x=secc_pov_rate_rural)) + 
-  geom_histogram() +
-  geom_vline(xintercept = mean(as_train$secc_pov_rate_rural, na.rm = TRUE), col = "red") +
-  xlab("Percent of Rural Households Below Poverty Rate") +
-  ylab("Count") +
-  labs(title = "Rural Poverty Rate Distribution, Assam (Shrid-Level)")
-
-#Graph 2: Poverty Rate vs Night Lights (Assam)
-as_train %>%
-  ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) +
-  geom_point(alpha = 0.25) +
-  labs(title = "Poverty rate vs. Night Light, Assam", 
-       subtitle = "(Source: Socioeconomic & Caste Census 2011, VIIRS Night Lights 2012)") +
-  xlab("Average Annual Night Light in Shrid") +
-  ylab("Percent of Rural Households Below Poverty Line") +
-  theme_minimal()
-
-#Graph 3: Poverty Rate vs. Middle School Education (Assam)
-as_train %>%
-  ggplot(aes(x = ed_mid_share, y = secc_pov_rate_rural)) +
-  geom_smooth(alpha = 0.5) +
-  labs(title = "Level of Education vs. Poverty rate, Assam", 
-       subtitle = "(Source: Socioeconomic & Caste Census 2011-2012)") +
-  xlab("Share of Rural Population with Middle School Education") +
-  ylab("Percent of Rural Households Below Poverty Line") +
-  theme_minimal()
-
-#Graph 4: Poverty Rate by Proportion of Population that is SC/ST
-
-#create SC/ST proportion variable -- create duplicate train_EDA so as to not add extra columns to training df which are not present in test df
-as_train_EDA <- as_train %>%
-  mutate(sched_prop = (pc11_pca_p_sc + pc11_pca_p_st) / pc11_pca_tot_p)
-
-#graph
-as_train_EDA %>%
-ggplot(aes(x = sched_prop, y = secc_pov_rate_rural)) +
-geom_smooth(alpha = 0.5) +
-theme_linedraw() +
-labs(
-  x = "Proportion of Scheduled Caste/Tribe Proportion (Shrid)",
-  y = "Percent of Rural Households Below Poverty Line",
-  title = "Poverty Rate by Schedule Caste/Tribe Population Proportion, Assam",
-  subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
-)
-
-#Graph 5: Poverty Rate by Literacy Rate
-#create total literacy rate variable
-as_train_EDA <- as_train %>%
-  mutate(lit_rate = (pc11_pca_p_lit) / pc11_pca_tot_p)
-
-#graph 
-as_train_EDA %>%
-ggplot(aes(x = lit_rate, y = secc_pov_rate_rural)) +
-geom_smooth(alpha = 0.5) +
-theme_linedraw() +
-labs(
-  x = "Literate Proportion of Population",
-  y = "Poverty Rate",
-  title = "Poverty Rate by Literacy Rate, Assam",
-  subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
-)
-
-#Graph 6: Poverty Rate by Proportion of Agricultural Employment
-
-#create var for proportion of workers who are cultivators
-as_train_EDA <- as_train %>%
-  mutate(ag_prop = pc11_pca_main_cl_p/pc11_pca_tot_work_p)
-
-#graph
-as_train_EDA %>%
-ggplot(aes(x = ag_prop, y = secc_pov_rate_rural)) +
-geom_smooth(alpha = 0.5) +
-theme_linedraw() +
-labs(
-  x = "Proportion of Workers who are Cultivators",
-  y = "Poverty Rate",
-  title = "Poverty Rate by Agricultural Employment, Assam",
-  subtitle = "((Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
-)
-```
 
 #Assam: geospatial analysis [Jacob to edit]
 ```{r}
