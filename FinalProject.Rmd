@@ -47,6 +47,19 @@ library(parsnip)
 library(rpart.plot)
 ```
 
+```{r}
+#setting up drive 
+drive_auth(
+  email = gargle::gargle_oauth_email(),
+  path = NULL,
+  subject = NULL,
+  scopes = "drive",
+  cache = gargle::gargle_oauth_cache(),
+  use_oob = gargle::gargle_oob_default(),
+  token = NULL
+)
+```
+
 #load datasets
 ```{r}
 
@@ -82,7 +95,6 @@ rm(secc_caste_drive)
 rm(census_abstract_drive)
 
 ```
-
 
 #parse dataframes
 ```{r}
@@ -148,6 +160,16 @@ assam <- as_list %>%
 #madhya pradesh: data cleaning / ML set-up
 
 ```{r}
+#checking for missing values merged MP dataset 
+is_na_madhya_pradesh <- is.na(madhya_pradesh)
+print(is_na_madhya_pradesh)
+
+#There are missing values 
+any_missing_madhya_pradesh <- any(is.na(madhya_pradesh))
+print(any_missing_madhya_pradesh)
+```
+
+```{r}
 #filter to 2012
 madhya_pradesh <- madhya_pradesh %>%
   filter(year == 2012)
@@ -157,7 +179,6 @@ set.seed(12152023)
 mp_split <- initial_split(data = madhya_pradesh, prop = 0.7)
 mp_train <- training(x = mp_split)
 mp_test <- testing(x = mp_split)
-
 ```
 
 #madhya pradesh: data visualization w/ training dataset
@@ -165,7 +186,7 @@ mp_test <- testing(x = mp_split)
 #Graph 1: Histogram of Poverty Rate (MP)
 ggplot(mp_train, aes(x=secc_pov_rate_rural)) + 
   geom_histogram() +
-  geom_vline(xintercept = mean(mp_train$secc_pov_rate_rural), col = "red") +
+  geom_vline(xintercept = mean(mp_train$secc_pov_rate_rural, na.rm = TRUE), col = "red") +
   xlab("Percent of Rural Households Below Poverty Rate") +
   ylab("Count") +
   labs(title = "Rural Poverty Rate Distribution, Madhya Pradesh (Shrid-Level)")
@@ -261,6 +282,357 @@ madhya_pradesh_sf <- st_as_sf(madhya_pradesh_sf)
 
 ```
 
+#Assam: data cleaning / ML set-up
+```{r}
+#filter to 2012
+#assam_v3 <- assam_v2 %>%
+#  filter(year == 2012)
+
+#create testing and training datasets 
+set.seed(12152023)
+as_split <- initial_split(data = assam, prop = 0.7)
+as_train <- training(x = as_split)
+as_test <- testing(x = as_split)
+```
+
+```{r}
+#dropping missing values (assam)
+as_train <-
+  as_train %>%
+  na.omit()
+
+#dropping missing values (assam)
+as_test <-
+  as_test %>%
+  na.omit()
+```
+
+#Assam: data visualization w/ training dataset
+```{r - Data Visualization (Assam)}
+#Graph 1: Histogram of Poverty Rate (Assam)
+ggplot(as_train, aes(x=secc_pov_rate_rural)) + 
+  geom_histogram() +
+  geom_vline(xintercept = mean(as_train$secc_pov_rate_rural, na.rm = TRUE), col = "red") +
+  xlab("Percent of Rural Households Below Poverty Rate") +
+  ylab("Count") +
+  labs(title = "Rural Poverty Rate Distribution, Assam (Shrid-Level)")
+
+#Graph 2: Poverty Rate vs Night Lights (Assam)
+as_train %>%
+  ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) +
+  geom_point(alpha = 0.25) +
+  labs(title = "Poverty rate vs. Night Light, Assam", 
+       subtitle = "(Source: Socioeconomic & Caste Census 2011, VIIRS Night Lights 2012)") +
+  xlab("Average Annual Night Light in Shrid") +
+  ylab("Percent of Rural Households Below Poverty Line") +
+  theme_minimal()
+
+#Graph 3: Poverty Rate vs. Middle School Education (Assam)
+as_train %>%
+  ggplot(aes(x = ed_mid_share, y = secc_pov_rate_rural)) +
+  geom_smooth(alpha = 0.5) +
+  labs(title = "Level of Education vs. Poverty rate, Assam", 
+       subtitle = "(Source: Socioeconomic & Caste Census 2011-2012)") +
+  xlab("Share of Rural Population with Middle School Education") +
+  ylab("Percent of Rural Households Below Poverty Line") +
+  theme_minimal()
+
+#Graph 4: Poverty Rate by Proportion of Population that is SC/ST
+
+#create SC/ST proportion variable -- create duplicate train_EDA so as to not add extra columns to training df which are not present in test df
+as_train_EDA <- as_train %>%
+  mutate(sched_prop = (pc11_pca_p_sc + pc11_pca_p_st) / pc11_pca_tot_p)
+
+#graph
+as_train_EDA %>%
+ggplot(aes(x = sched_prop, y = secc_pov_rate_rural)) +
+geom_smooth(alpha = 0.5) +
+theme_linedraw() +
+labs(
+  x = "Proportion of Scheduled Caste/Tribe Proportion (Shrid)",
+  y = "Percent of Rural Households Below Poverty Line",
+  title = "Poverty Rate by Schedule Caste/Tribe Population Proportion, Assam",
+  subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
+)
+
+#Graph 5: Poverty Rate by Literacy Rate
+#create total literacy rate variable
+as_train_EDA <- as_train %>%
+  mutate(lit_rate = (pc11_pca_p_lit) / pc11_pca_tot_p)
+
+#graph 
+as_train_EDA %>%
+ggplot(aes(x = lit_rate, y = secc_pov_rate_rural)) +
+geom_smooth(alpha = 0.5) +
+theme_linedraw() +
+labs(
+  x = "Literate Proportion of Population",
+  y = "Poverty Rate",
+  title = "Poverty Rate by Literacy Rate, Assam",
+  subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
+)
+
+#Graph 6: Poverty Rate by Proportion of Agricultural Employment
+
+#create var for proportion of workers who are cultivators
+as_train_EDA <- as_train %>%
+  mutate(ag_prop = pc11_pca_main_cl_p/pc11_pca_tot_work_p)
+
+#graph
+as_train_EDA %>%
+ggplot(aes(x = ag_prop, y = secc_pov_rate_rural)) +
+geom_smooth(alpha = 0.5) +
+theme_linedraw() +
+labs(
+  x = "Proportion of Workers who are Cultivators",
+  y = "Poverty Rate",
+  title = "Poverty Rate by Agricultural Employment, Assam",
+  subtitle = "((Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
+)
+```
+
+#Assam: geospatial analysis [Jacob to edit]
+```{r}
+
+#Reading in shrid shape file
+#shrid <- st_read("raw data/shrid2_open.shp", quiet = TRUE)
+#shrid <- st_transform(shrid, crs = 4326)
+
+#Merging sf file into madhya_pradesh
+#assam_sf <- merge(assam_v2, shrid, by = c("shrid2.x"))
+
+#Converting data
+#assam_sf <- st_as_sf(assam_sf)
+ 
+
+```
+
+```{r}
+
+shrid <- st_read("shrid2_open.shp", quiet = TRUE)
+shrid <- st_transform(shrid, crs = 4326)
+shrid_v2 <- readOGR("shrid2_open.shp")
+```
+
+```{r}
+assam_v3 <-
+  assam_v2
+
+names(assam_v3)[names(assam_v3) == 'shrid2.x'] <- 'shrid2'
+```
+
+```{r}
+assam_merged <- merge(assam_v3, shrid, by = c("shrid2"))
+assam_map_setup <- merge(shrid_v2, assam_merged, by = c("shrid2"))
+
+#Converting data
+assam_map_setup <- st_as_sf(rural_map_setup)
+
+#Removing missing data from poverty rate column
+assam_map_setup <- assam_map_setup %>%
+  filter(!is.na(secc_pov_rate_rural))
+
+#Continuing to transform data
+#into form in which we can map into
+assam_map_setup <- st_transform(rural_map_setup, crs = 4326)
+```
+
+```{r}
+#Creating map of rural poverty
+assam_map_setup %>% 
+  ggplot() +
+  geom_sf(color = NA, aes(fill = secc_pov_rate_rural)) +
+  labs(title = "Mapping poverty in rural shrids of Assam",
+       fill = "Rural poverty rate")
+```
+
+```{r}
+as_train <-
+  as_train %>%
+  select(-c(year, shrid2.x, shrid2.x.x, shrid2.y, shrid2.y.y, TTTTTT))
+```
+
+```{r}
+as_test <-
+  as_test %>%
+  select(-c(year, shrid2.x, shrid2.x.x, shrid2.y, shrid2.y.y, TTTTTT))
+```
+
+Assam: Model 1 - CART 
+```{r}
+
+#Coming up with a recipe for all the Assam models
+as_rec <- recipe(formula = secc_pov_rate_rural ~ ., 
+                 data = as_train) %>%
+  step_zv(all_predictors()) %>%
+  step_select(all_numeric()) %>%
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors()) %>%
+  prep()
+
+```
+
+```{r}
+#setting seed and v-fold cross-validation
+set.seed(04281998)
+folds <- vfold_cv(data = as_train, v = 10, repeats = 1) 
+```
+
+```{r}
+#coming up with a cart mod
+cart_mod <-
+  decision_tree() %>%
+  set_engine(engine = "rpart") %>%
+  set_mode(mode = "regression")
+
+#Creating workflow 
+cart_wf <- workflow() %>%
+  add_recipe(as_rec) %>%
+  add_model(cart_mod)
+
+#Fitting the model
+cart_fit <- cart_wf %>%
+  fit(data = as_train)
+
+#Creating a tree
+tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit)
+
+```
+
+```{r}
+#plotting vip
+cart_fit %>%
+extract_fit_parsnip() %>%
+vip(num_features = 10)
+
+```
+Assam Model 2: Linear Regression 
+```{r}
+#create model object
+lm_mod <- linear_reg() %>%
+  set_engine("lm")
+
+# create a workflow
+lm_wf <- workflow() %>%
+  add_recipe(as_rec) %>%
+  add_model(lm_mod) 
+
+#function needed to extract coefficients
+get_lm_coefs <- function(x) {
+  
+  x %>% 
+    extract_fit_engine() %>% 
+    tidy()
+}
+
+tidy_ctrl <- control_grid(extract = get_lm_coefs)
+
+#fit 
+lm_cv <- lm_wf %>%
+  fit_resamples(resamples = folds, control = tidy_ctrl)
+
+#measure RMSE 
+collect_metrics(lm_cv, summarize = FALSE) %>%
+ filter(.metric == "rmse") %>%
+ ggplot(aes(id, .estimate, group = .estimator)) +
+ geom_line() +
+ geom_point() +
+ scale_y_continuous(limits = c(0, 0.5)) +
+ labs(title = "Calculated RMSE Across the 10 Folds",
+ y = "RMSE_hat") +
+ theme_minimal()
+```
+
+```{R}
+#collecting metrics
+metric_table_lm <- collect_metrics(lm_cv, summarize = TRUE)
+metric_table_lm %>%
+  filter(.metric == "rmse")
+```
+
+```{r}
+#Getting coefficients
+lm_coefs <- lm_cv %>% 
+  select(id, .extracts) %>% 
+  unnest(.extracts)  %>% 
+  unnest(.extracts)
+
+#Getting coefficients for night light
+lm_coefs %>%
+  filter(term == "viirs_annual_mean")
+```
+
+```{r}
+#checking the correlation between nlight and poverty rate
+test <-
+  as_train %>%
+  filter(!is.na(viirs_annual_mean)) %>%
+  filter(!is.na(secc_pov_rate_rural))
+cor(test$viirs_annual_mean, test$secc_pov_rate_rural)
+```
+
+Assam Model 3: LASSO
+#Juliet Code 
+```{r}
+#Lasso model
+lasso_grid <- grid_regular(penalty(), levels = 10)
+
+lasso_mod <- linear_reg(
+  penalty = tune(), 
+  mixture = 1,
+) %>%
+  set_engine("glmnet")
+
+#creating wf
+lasso_wf <- workflow() %>%
+  add_recipe(as_rec) %>%
+  add_model(lasso_mod) 
+
+#fitting wf 
+lasso_cv <- lasso_wf %>%
+  tune_grid(
+    resamples = folds,
+    grid = lasso_grid)
+
+lasso_best <- lasso_cv %>%
+  select_best(metric = "rmse")
+
+#finalizing first wf 
+lasso_final <- finalize_workflow(
+  lasso_wf,
+  parameters = lasso_best
+)
+
+lasso_coefs <- lasso_final %>%
+  fit(data = as_train) %>%
+  extract_fit_parsnip() %>%
+  vi(lambda = lasso_best$penalty) 
+
+library(dplyr)
+#Coefficients for night light
+lasso_coefs %>%
+  filter(term == "viirs_annual_mean") %>%
+  #filter(step == 10)
+
+```
+
+```{r}
+#fitting LASSO on testing data 
+lasso_fit <- lasso_final %>%
+  fit(data = as_test)
+
+#create predictions df
+predictions_lasso <-
+  bind_cols(
+    test,
+    stats::predict(object = lasso_fit, new_data = as_test)
+  )
+
+# calculate the rmse on the testing data: 
+rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
+```
+
+
 Madhya Pradesh: Model 1 - CART 
 
 ```{r}
@@ -268,7 +640,7 @@ Madhya Pradesh: Model 1 - CART
 mp_rec <- recipe(formula = secc_pov_rate_rural ~ ., 
                  data = mp_train) %>%
   step_zv(all_predictors()) %>%
-  step_select(all_numeric())
+  step_select(all_numeric()) %>%
   step_center(all_predictors()) %>%
   step_scale(all_predictors()) %>%
   prep()
@@ -429,3 +801,82 @@ predictions_lasso <-
 # calculate the rmse on the testing data: 
 rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 ```
+
+
+Jacob's test involving classification
+
+```{r}
+#50%+ of rural households in poverty
+as_train$high_poverty <-
+  ifelse(as_train$secc_pov_rate_rural >= 0.5, "Higher", "Lower")
+as_test$high_poverty <-
+  ifelse(as_test$secc_pov_rate_rural >= 0.5, "Higher", "Lower")
+```
+
+```{r}
+as_train$high_poverty <- as.factor(as_train$high_poverty)
+as_test$high_poverty <- as.factor(as_test$high_poverty)
+```
+
+
+```{r}
+# create a recipe
+cart_rec <-
+  recipe(formula = high_poverty ~ viirs_annual_mean + land_own_share, data = as_train)
+# create a cart model object
+cart_mod_classification <-
+  decision_tree() %>%
+  set_engine(engine = "rpart") %>%
+  set_mode(mode = "classification")
+cart_wf_classification <- workflow() %>%
+  add_recipe(cart_rec) %>%
+  add_model(cart_mod_classification)
+# fit the model
+cart_fit_classification <- 
+  cart_wf_classification %>%
+  fit(data = as_train)
+```
+
+```{r}
+rpart.plot::rpart.plot(x = cart_fit_classification$fit$fit$fit)
+```
+
+
+```{r}
+predictions <- bind_cols(
+  as_test,
+  predict(object = cart_fit_classification, new_data = as_test),
+  predict(object = cart_fit_classification, new_data = as_test, type = "prob")
+)
+select(predictions, high_poverty, starts_with(".pred"))
+```
+```{r}
+library(yardstick)
+conf_mat(data = predictions,
+truth = high_poverty,
+estimate = .pred_class)
+```
+```{r}
+accuracy(data = predictions,
+truth = high_poverty,
+estimate = .pred_class)
+```
+(842+3882)/(842+3882+632+1362)
+
+Accuracy: 70%
+
+```{r}
+precision_vec(data = predictions,
+truth = predictions$high_poverty,
+estimate = predictions$.pred_class)
+```
+
+Precision: 57%
+
+```{r}
+recall_vec(data = predictions,
+truth = predictions$high_poverty,
+estimate = predictions$.pred_class)
+```
+
+Recall: 38%
