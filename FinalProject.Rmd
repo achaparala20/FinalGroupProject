@@ -612,7 +612,7 @@ library(dplyr)
 #Coefficients for night light
 lasso_coefs %>%
   filter(term == "viirs_annual_mean") %>%
-  #filter(step == 10)
+  filter(step == 10)
 
 ```
 
