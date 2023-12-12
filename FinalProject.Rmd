@@ -439,9 +439,12 @@ shrid2_open_shx_drive <- drive_download(file = "shrid2_open_ja.shx", overwrite =
 ```
 
 ```{r}
+#Reading in shape file and perform
+  #a data transformation
 shrid <- st_read("shrid2_open_ja.shp", quiet = TRUE)
 shrid <- st_transform(shrid, crs = 4326)
 
+#Reading in shape file
 shrid_v2 <- readOGR("shrid2_open_ja.shp")
 ```
 
@@ -475,6 +478,8 @@ india_map %>%
 #Madhya Pradesh: geospatial analysis
 
 ```{r}
+#Creating a map like the previous one but filtering
+  #to just shrids in MP
 india_map %>%
   filter(SS == 23) %>% 
   ggplot() +
@@ -486,6 +491,8 @@ india_map %>%
 #Assam: geospatial analysis
 
 ```{r}
+#Creating a map like the previous one but filtering
+  #to just shrids in Assam
 india_map %>%
   filter(SS == 18) %>% 
   ggplot() +
@@ -879,68 +886,76 @@ as_test$high_poverty <-
 ```
 
 ```{r}
+#Making high_poverty variable factors
 as_train$high_poverty <- as.factor(as_train$high_poverty)
 as_test$high_poverty <- as.factor(as_test$high_poverty)
 ```
 
 ```{r}
 # create a recipe
-cart_rec <-
+cart_rec_as <-
   recipe(formula = high_poverty ~ viirs_annual_mean + land_own_share, data = as_train)
 # create a cart model object
-cart_mod_classification <-
+cart_mod_classification_as <-
   decision_tree() %>%
   set_engine(engine = "rpart") %>%
   set_mode(mode = "classification")
-cart_wf_classification <- workflow() %>%
-  add_recipe(cart_rec) %>%
-  add_model(cart_mod_classification)
+cart_wf_classification_as <- workflow() %>%
+  add_recipe(cart_rec_as) %>%
+  add_model(cart_mod_classification_as)
 # fit the model
-cart_fit_classification <- 
-  cart_wf_classification %>%
+cart_fit_classification_as <- 
+  cart_wf_classification_as %>%
   fit(data = as_train)
 ```
 
 ```{r}
-rpart.plot::rpart.plot(x = cart_fit_classification$fit$fit$fit)
+#Visualizing decision tree
+rpart.plot::rpart.plot(x = cart_fit_classification_as$fit$fit$fit)
 ```
 
 ```{r}
-predictions <- bind_cols(
+#Adding predicted values and probabilities
+  #as columns to testing dataset
+predictions_as <- bind_cols(
   as_test,
-  predict(object = cart_fit_classification, new_data = as_test),
-  predict(object = cart_fit_classification, new_data = as_test, type = "prob")
+  predict(object = cart_fit_classification_as, new_data = as_test),
+  predict(object = cart_fit_classification_as, new_data = as_test, type = "prob")
 )
 ```
 
 ```{r}
-conf_mat(data = predictions,
+#Creating confusion matrix
+conf_mat(data = predictions_as,
 truth = high_poverty,
 estimate = .pred_class)
 ```
 ```{r}
-accuracy(data = predictions,
+#Calculating accuracy
+accuracy(data = predictions_as,
 truth = high_poverty,
 estimate = .pred_class)
 ```
 
-Accuracy: 70%
+Accuracy: 71%
 
 ```{r}
-precision_vec(data = predictions,
-truth = predictions$high_poverty,
-estimate = predictions$.pred_class)
+#Calculating precision
+precision_vec(data = predictions_as,
+truth = predictions_as$high_poverty,
+estimate = predictions_as$.pred_class)
 ```
 
 Precision: 57%
 
 ```{r}
-recall_vec(data = predictions,
-truth = predictions$high_poverty,
-estimate = predictions$.pred_class)
+#Calculating recall
+recall_vec(data = predictions_as,
+truth = predictions_as$high_poverty,
+estimate = predictions_as$.pred_class)
 ```
 
-Recall: 38%
+Recall: 24%
 
 ##Madhya Pradesh
 
@@ -954,48 +969,54 @@ mp_test$high_poverty <-
 ```
 
 ```{r}
+#Making high poverty column factors
 mp_train$high_poverty <- as.factor(mp_train$high_poverty)
 mp_test$high_poverty <- as.factor(mp_test$high_poverty)
 ```
 
 ```{r}
 # create a recipe
-cart_rec <-
+cart_rec_mp <-
   recipe(formula = high_poverty ~ viirs_annual_mean + land_own_share, data = mp_train)
 # create a cart model object
-cart_mod_classification <-
+cart_mod_classification_mp <-
   decision_tree() %>%
   set_engine(engine = "rpart") %>%
   set_mode(mode = "classification")
-cart_wf_classification <- workflow() %>%
-  add_recipe(cart_rec) %>%
-  add_model(cart_mod_classification)
+cart_wf_classification_mp <- workflow() %>%
+  add_recipe(cart_rec_mp) %>%
+  add_model(cart_mod_classification_mp)
 # fit the model
-cart_fit_classification <- 
-  cart_wf_classification %>%
+cart_fit_classification_mp <- 
+  cart_wf_classification_mp %>%
   fit(data = mp_train)
 ```
 
 ```{r}
-rpart.plot::rpart.plot(x = cart_fit_classification$fit$fit$fit)
+#Visualizing decision tree
+rpart.plot::rpart.plot(x = cart_fit_classification_mp$fit$fit$fit)
 ```
 
 ```{r}
-predictions <- bind_cols(
+#Adding predicted values and probabilities
+  #as columns to testing dataset
+predictions_mp <- bind_cols(
   mp_test,
-  predict(object = cart_fit_classification, new_data = mp_test),
-  predict(object = cart_fit_classification, new_data = mp_test, type = "prob")
+  predict(object = cart_fit_classification_mp, new_data = mp_test),
+  predict(object = cart_fit_classification_mp, new_data = mp_test, type = "prob")
 )
 ```
 
 ```{r}
-conf_mat(data = predictions,
+#Creating decision tree
+conf_mat(data = predictions_mp,
 truth = high_poverty,
 estimate = .pred_class)
 ```
 
 ```{r}
-accuracy(data = predictions,
+#Calculating accuracy
+accuracy(data = predictions_mp,
 truth = high_poverty,
 estimate = .pred_class)
 ```
@@ -1003,17 +1024,18 @@ estimate = .pred_class)
 Accuracy: 68%
 
 ```{r}
-precision_vec(data = predictions,
-truth = predictions$high_poverty,
-estimate = predictions$.pred_class)
+#Calculating precision
+precision_vec(data = predictions_mp,
+truth = predictions_mp$high_poverty,
+estimate = predictions_mp$.pred_class)
 ```
 
 Precision: 64%
 
 ```{r}
-recall_vec(data = predictions,
-truth = predictions$high_poverty,
-estimate = predictions$.pred_class)
+recall_vec(data = predictions_mp,
+truth = predictions_mp$high_poverty,
+estimate = predictions_mp$.pred_class)
 ```
 
 Recall: 57%
