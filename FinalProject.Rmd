@@ -5,6 +5,7 @@ date: "2023-12-06"
 ---
 
 #load packages
+
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(readr)
@@ -19,7 +20,6 @@ library(yardstick)
 library(parsnip)
 library(vip)
 library(GGally)
-library(sf)
 library(sf)
 library(tidyverse)
 library(janitor)
@@ -46,6 +46,7 @@ library(randomForest)
 library(parsnip)
 library(rpart.plot)
 library(patchwork)
+library(rgdal)
 ```
 
 ```{r}
@@ -62,6 +63,7 @@ drive_auth(
 ```
 
 #load datasets
+
 ```{r}
 
 #nightlight (viirs) data
@@ -98,6 +100,7 @@ rm(census_abstract_drive)
 ```
 
 #parse dataframes
+
 ```{r}
 
 #viirs
@@ -123,6 +126,7 @@ census_abstract <- census_abstract %>%
 ```
 
 #create merged dataframes for each state
+
 ```{r}
 
 #create state-specific versions of all four dataframes:
@@ -191,6 +195,7 @@ mp_test <-
 ```
 
 #Assam: Data cleaning / ML set-up
+
 ```{r}
 #filter to 2012
 #assam_v3 <- assam_v2 %>%
@@ -213,7 +218,8 @@ as_test <-
   na.omit()
 ```
 
-#Data visualization w/ training dataset
+#Data visualization w/training dataset
+
 ```{r - Data Visualization}
 
 #Histograms of Poverty Rate by State
@@ -421,77 +427,85 @@ plot_combined <- plot11 + plot12
 plot_combined
 ```
 
-#madhya pradesh: geospatial analysis
-```{r}
+#India (overall): geospatial analysis
 
-#Reading in shrid shape file
-shrid <- st_read("raw data/shrid2_open.shp", quiet = TRUE)
+```{r}
+#Reading in shrid shape files
+shrid2_open_cpg_drive <- drive_download(file = "shrid2_open_ja.cpg", overwrite = TRUE)
+shrid2_open_dbf_drive <- drive_download(file = "shrid2_open_ja.dbf", overwrite = TRUE)
+shrid2_open_prj_drive <- drive_download(file = "shrid2_open_ja.prj", overwrite = TRUE)
+shrid2_open_shp_drive <- drive_download(file = "shrid2_open_ja.shp", overwrite = TRUE)
+shrid2_open_shx_drive <- drive_download(file = "shrid2_open_ja.shx", overwrite = TRUE)
+```
+
+```{r}
+shrid <- st_read("shrid2_open_ja.shp", quiet = TRUE)
 shrid <- st_transform(shrid, crs = 4326)
 
-#Merging sf file into madhya_pradesh
-madhya_pradesh_sf <- merge(madhya_pradesh, shrid, by = c("shrid2.x"))
+shrid_v2 <- readOGR("shrid2_open_ja.shp")
+```
+
+```{r}
+#Merging together SECC consumption data
+#and shrid boundaries
+secc_merged <- merge(secc_cons, shrid, by = c("shrid2"))
+india_map <- merge(shrid_v2, secc_merged, by = c("shrid2"))
 
 #Converting data
-madhya_pradesh_sf <- st_as_sf(madhya_pradesh_sf)
- 
-
-```
-
-
-#Assam: geospatial analysis [Jacob to edit]
-```{r}
-
-#Reading in shrid shape file
-#shrid <- st_read("raw data/shrid2_open.shp", quiet = TRUE)
-#shrid <- st_transform(shrid, crs = 4326)
-
-#Merging sf file into madhya_pradesh
-#assam_sf <- merge(assam_v2, shrid, by = c("shrid2.x"))
-
-#Converting data
-#assam_sf <- st_as_sf(assam_sf)
- 
-
-```
-
-```{r}
-
-shrid <- st_read("shrid2_open.shp", quiet = TRUE)
-shrid <- st_transform(shrid, crs = 4326)
-shrid_v2 <- readOGR("shrid2_open.shp")
-```
-
-```{r}
-assam_v3 <-
-  assam_v2
-
-names(assam_v3)[names(assam_v3) == 'shrid2.x'] <- 'shrid2'
-```
-
-```{r}
-assam_merged <- merge(assam_v3, shrid, by = c("shrid2"))
-assam_map_setup <- merge(shrid_v2, assam_merged, by = c("shrid2"))
-
-#Converting data
-assam_map_setup <- st_as_sf(rural_map_setup)
+india_map <- st_as_sf(india_map)
 
 #Removing missing data from poverty rate column
-assam_map_setup <- assam_map_setup %>%
+india_map <- india_map %>%
   filter(!is.na(secc_pov_rate_rural))
 
 #Continuing to transform data
 #into form in which we can map into
-assam_map_setup <- st_transform(rural_map_setup, crs = 4326)
+india_map <- st_transform(india_map, crs = 4326)
+```
+
+```{r, message = FALSE, warning = FALSE}
+#Creating map of rural poverty in India
+india_map %>% 
+  ggplot() +
+  geom_sf(color = NA, aes(fill = secc_pov_rate_rural)) +
+  labs(title = "Mapping poverty in India",
+       fill = "Rural poverty rate")
+```
+
+#Madhya Pradesh: geospatial analysis
+
+```{r}
+india_map %>%
+  filter(SS == 23) %>% 
+  ggplot() +
+  geom_sf(color = NA, aes(fill = secc_pov_rate_rural)) +
+  labs(title = "Mapping poverty in Madhya Pradesh",
+       fill = "Rural poverty rate")
+```
+
+#Assam: geospatial analysis
+
+```{r}
+india_map %>%
+  filter(SS == 18) %>% 
+  ggplot() +
+  geom_sf(color = NA, aes(fill = secc_pov_rate_rural)) +
+  labs(title = "Mapping poverty in Assam",
+       fill = "Rural poverty rate")
 ```
 
 ```{r}
-#Creating map of rural poverty
-assam_map_setup %>% 
-  ggplot() +
-  geom_sf(color = NA, aes(fill = secc_pov_rate_rural)) +
-  labs(title = "Mapping poverty in rural shrids of Assam",
-       fill = "Rural poverty rate")
+#Removing files for shape files
+file.remove("shrid2_open_ja.cpg")
+file.remove("shrid2_open_ja.dbf")
+file.remove("shrid2_open_ja.prj")
+file.remove("shrid2_open_ja.shp")
+file.remove("shrid2_open_ja.shx")
 ```
+
+
+
+
 
 ```{r}
 as_train <-
@@ -505,7 +519,8 @@ as_test <-
   select(-c(year, shrid2.x, shrid2.x.x, shrid2.y, shrid2.y.y, TTTTTT))
 ```
 
-Assam: Model 1 - CART 
+Assam: Model 1 - CART
+
 ```{r}
 
 #Coming up with a recipe for all the Assam models
@@ -553,7 +568,9 @@ extract_fit_parsnip() %>%
 vip(num_features = 10)
 
 ```
-Assam Model 2: Linear Regression 
+
+Assam Model 2: Linear Regression
+
 ```{r}
 #create model object
 lm_mod <- linear_reg() %>%
@@ -618,8 +635,8 @@ test <-
 cor(test$viirs_annual_mean, test$secc_pov_rate_rural)
 ```
 
-Assam Model 3: LASSO
-#Juliet Code 
+Assam Model 3: LASSO #Juliet Code
+
 ```{r}
 #Lasso model
 lasso_grid <- grid_regular(penalty(), levels = 10)
@@ -679,8 +696,7 @@ predictions_lasso <-
 rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 ```
 
-
-Madhya Pradesh: Model 1 - CART 
+Madhya Pradesh: Model 1 - CART
 
 ```{r}
 #Coming up with a recipe for all the Madhya Pradesh models
@@ -691,7 +707,6 @@ mp_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = mp_train) %>%
   step_scale(all_predictors()) %>%
   prep()
 ```
-
 
 ```{r}
 #setting seed and v-fold cross-validation
@@ -728,7 +743,8 @@ vip(num_features = 10)
 
 ```
 
-Model 2: Linear Regression 
+Model 2: Linear Regression
+
 ```{r}
 #create model object
 lm_mod <- linear_reg() %>%
@@ -788,8 +804,8 @@ lm_coefs %>%
   filter(term == "viirs_annual_mean")
 ```
 
-
 Model 3: LASSO
+
 ```{r}
 #Lasso model
 lasso_grid <- grid_regular(penalty(), levels = 10)
@@ -849,11 +865,13 @@ predictions_lasso <-
 rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 ```
 
+#Classification
 
-Jacob's test involving classification
+##Assam
 
 ```{r}
-#50%+ of rural households in poverty
+#Creating binary variable
+#1: 50%+ of rural households in poverty, 0: under 50% of rural households in poverty
 as_train$high_poverty <-
   ifelse(as_train$secc_pov_rate_rural >= 0.5, "Higher", "Lower")
 as_test$high_poverty <-
@@ -864,7 +882,6 @@ as_test$high_poverty <-
 as_train$high_poverty <- as.factor(as_train$high_poverty)
 as_test$high_poverty <- as.factor(as_test$high_poverty)
 ```
-
 
 ```{r}
 # create a recipe
@@ -888,17 +905,15 @@ cart_fit_classification <-
 rpart.plot::rpart.plot(x = cart_fit_classification$fit$fit$fit)
 ```
 
-
 ```{r}
 predictions <- bind_cols(
   as_test,
   predict(object = cart_fit_classification, new_data = as_test),
   predict(object = cart_fit_classification, new_data = as_test, type = "prob")
 )
-select(predictions, high_poverty, starts_with(".pred"))
 ```
+
 ```{r}
-library(yardstick)
 conf_mat(data = predictions,
 truth = high_poverty,
 estimate = .pred_class)
@@ -908,7 +923,6 @@ accuracy(data = predictions,
 truth = high_poverty,
 estimate = .pred_class)
 ```
-(842+3882)/(842+3882+632+1362)
 
 Accuracy: 70%
 
@@ -927,3 +941,79 @@ estimate = predictions$.pred_class)
 ```
 
 Recall: 38%
+
+##Madhya Pradesh
+
+```{r}
+#Creating binary variable
+#1: 50%+ of rural households in poverty, 0: under 50% of rural households in poverty
+mp_train$high_poverty <-
+  ifelse(mp_train$secc_pov_rate_rural >= 0.5, "Higher", "Lower")
+mp_test$high_poverty <-
+  ifelse(mp_test$secc_pov_rate_rural >= 0.5, "Higher", "Lower")
+```
+
+```{r}
+mp_train$high_poverty <- as.factor(mp_train$high_poverty)
+mp_test$high_poverty <- as.factor(mp_test$high_poverty)
+```
+
+```{r}
+# create a recipe
+cart_rec <-
+  recipe(formula = high_poverty ~ viirs_annual_mean + land_own_share, data = mp_train)
+# create a cart model object
+cart_mod_classification <-
+  decision_tree() %>%
+  set_engine(engine = "rpart") %>%
+  set_mode(mode = "classification")
+cart_wf_classification <- workflow() %>%
+  add_recipe(cart_rec) %>%
+  add_model(cart_mod_classification)
+# fit the model
+cart_fit_classification <- 
+  cart_wf_classification %>%
+  fit(data = mp_train)
+```
+
+```{r}
+rpart.plot::rpart.plot(x = cart_fit_classification$fit$fit$fit)
+```
+
+```{r}
+predictions <- bind_cols(
+  mp_test,
+  predict(object = cart_fit_classification, new_data = mp_test),
+  predict(object = cart_fit_classification, new_data = mp_test, type = "prob")
+)
+```
+
+```{r}
+conf_mat(data = predictions,
+truth = high_poverty,
+estimate = .pred_class)
+```
+
+```{r}
+accuracy(data = predictions,
+truth = high_poverty,
+estimate = .pred_class)
+```
+
+Accuracy: 68%
+
+```{r}
+precision_vec(data = predictions,
+truth = predictions$high_poverty,
+estimate = predictions$.pred_class)
+```
+
+Precision: 64%
+
+```{r}
+recall_vec(data = predictions,
+truth = predictions$high_poverty,
+estimate = predictions$.pred_class)
+```
+
+Recall: 57%
