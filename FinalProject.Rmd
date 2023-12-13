@@ -46,7 +46,7 @@ library(randomForest)
 library(parsnip)
 library(rpart.plot)
 library(patchwork)
-library(rgdal)
+#library(rgdal)
 ```
 
 ```{r}
@@ -222,7 +222,7 @@ as_test <-
 
 ```{r - Data Visualization}
 
-#Histograms of Poverty Rate by State
+#A: Histograms of Poverty Rate by State
 
 #Madhya Pradesh
 plot1 <- ggplot(mp_train, aes(x=secc_pov_rate_rural)) + 
@@ -230,7 +230,7 @@ plot1 <- ggplot(mp_train, aes(x=secc_pov_rate_rural)) +
   geom_vline(xintercept = mean(mp_train$secc_pov_rate_rural, na.rm = TRUE), col = "red") +
   xlab("% of Shrid Households in Poverty") +
   ylab("Count") +
-  labs(title = "Rural Poverty Distribution, Madhya Pradesh") +
+  labs(title = "Madhya Pradesh") +
   theme_minimal() + 
   theme(
     axis.title = element_text(size = 8), 
@@ -244,7 +244,7 @@ plot2 <- ggplot(as_train, aes(x=secc_pov_rate_rural)) +
   geom_vline(xintercept = mean(as_train$secc_pov_rate_rural, na.rm = TRUE), col = "red") +
   xlab("% of Shrid Households in Poverty") +
   ylab("Count") +
-  labs(title = "Rural Poverty Distribution, Assam") +
+  labs(title = "Assam") +
   theme_minimal() + 
   theme(
     axis.title = element_text(size = 8), 
@@ -253,20 +253,27 @@ plot2 <- ggplot(as_train, aes(x=secc_pov_rate_rural)) +
   )
 
 #side-by-side
-plot_combined <- plot1 + plot2
-plot_combined
+plot_combined <- plot1 + plot2 +
+  plot_annotation(title = "Rural Poverty Distribution") 
+print(plot_combined)
 
-#Poverty Rate vs Night Lights 
+
+#B: Poverty Rate vs Night Lights 
 
 #Madhya Pradesh
 
 plot3 <- mp_train %>%
-  ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) + 
-  geom_point(alpha = 0.25) +
-  labs(title = "Shrid Poverty Rate vs. Night Light, Madhya Pradesh",  
-       xlab("Average Night Light Radiance (nW/cm^2/sr)"),
-       ylab("% of Shrid Households in Poverty")) +
-  theme_minimal() + 
+  ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) +
+  geom_point(alpha = 0.25) + 
+  scale_x_continuous(
+    name = "Average Night Light Radiance (nW/cm^2/sr)"
+  ) +
+  scale_y_continuous(
+    name = "% of Shrid Households in Poverty"
+  ) +
+  labs(title = "Madhya Pradesh") +
+
+  theme_minimal() +
   theme(
     axis.title = element_text(size = 8), 
     axis.text = element_text(size = 8),
@@ -277,9 +284,13 @@ plot3 <- mp_train %>%
 plot4 <- as_train %>%
    ggplot(aes(x = viirs_annual_mean, y = secc_pov_rate_rural)) + 
   geom_point(alpha = 0.25) +
-  labs(title = "Shrid Poverty Rate vs. Night Light, Assam",  
-       xlab("Average Night Light Radiance (nW/cm^2/sr)"),
-       ylab("% of Shrid Households in Poverty")) +
+  scale_x_continuous(
+    name = "Average Night Light Radiance (nW/cm^2/sr)"
+  ) +
+  scale_y_continuous(
+    name = "% of Shrid Households in Poverty"
+  ) +
+   labs(title = "Assam") +
   theme_minimal() + 
   theme(
     axis.title = element_text(size = 8), 
@@ -288,36 +299,46 @@ plot4 <- as_train %>%
   )
 
 #side-by-side
-plot_combined <- plot3 + plot4
+plot_combined <- plot3 + plot4  +
+  plot_annotation(title = "Shrid Poverty Rate vs. Night Light")
 plot_combined
 
-#Poverty Rate vs. Middle School Education 
+#C: Poverty Rate vs. Middle School Education 
 
 #Madhya Pradesh
 plot5 <- mp_train %>%
   ggplot(aes(x = ed_mid_share, y = secc_pov_rate_rural)) +
   geom_smooth(alpha = 0.5) +
-  labs(title = "Level of Education vs. Poverty rate, Madhya Pradesh", 
-       subtitle = "(Source: Socioeconomic & Caste Census 2011-2012)") +
+  labs(title = "Madhya Pradesh") +
   xlab("Share of Rural Population with Middle School Education") +
   ylab("Percent of Rural Households Below Poverty Line") +
-  theme_minimal()
+  theme_minimal()  + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  )
 
 #Assam
 plot6 <- as_train %>%
   ggplot(aes(x = ed_mid_share, y = secc_pov_rate_rural)) +
   geom_smooth(alpha = 0.5) +
-  labs(title = "Level of Education vs. Poverty rate, Assam", 
-       subtitle = "(Source: Socioeconomic & Caste Census 2011-2012)") +
+  labs(title = "Assam") +
   xlab("Share of Rural Population with Middle School Education") +
   ylab("Percent of Rural Households Below Poverty Line") +
-  theme_minimal()
+  theme_minimal()  + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  )
 
 #side-by-side
-plot_combined <- plot5 + plot6
+plot_combined <- plot5 + plot6 +
+  plot_annotation(title = "Middle School Graduate Rate vs. Poverty Rate")
 plot_combined
 
-#Poverty Rate by Proportion of Population that is SC/ST
+#D: Poverty Rate by Proportion of Population that is SC/ST
 
 #create SC/ST proportion variable -- create duplicate train_EDA so as to not add extra columns to training df which are not present in test df
 mp_train_EDA <- mp_train %>%
@@ -331,11 +352,16 @@ ggplot(aes(x = sched_prop, y = secc_pov_rate_rural)) +
 geom_smooth(alpha = 0.5) +
 theme_linedraw() +
 labs(
-  x = "Proportion of Scheduled Caste/Tribe Proportion (Shrid)",
+  x = "% Scheduled Caste/Tribe",
   y = "Percent of Rural Households Below Poverty Line",
-  title = "Poverty Rate by Schedule Caste/Tribe Population Proportion, Madhya Pradesh",
-  subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
-)
+  title = "Madhya Pradesh" 
+)  + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  ) +
+  theme_minimal()
 
 #Assam
 plot8 <- as_train_EDA %>%
@@ -343,18 +369,23 @@ ggplot(aes(x = sched_prop, y = secc_pov_rate_rural)) +
 geom_smooth(alpha = 0.5) +
 theme_linedraw() +
 labs(
-  x = "Proportion of Scheduled Caste/Tribe Proportion (Shrid)",
+  x = "% Scheduled Caste/Tribe",
   y = "Percent of Rural Households Below Poverty Line",
-  title = "Poverty Rate by Schedule Caste/Tribe Population Proportion, Assam",
-  subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
-)
+  title = "Assam") + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  ) +
+  theme_minimal()
 
 #side-by-side
-plot_combined <- plot7 + plot8
+plot_combined <- plot7 + plot8 +
+  plot_annotation(title = "Scheduled Caste/Tribe Population vs. Poverty Rate")
 plot_combined
 
 
-#Poverty Rate by Literacy Rate
+#E: Poverty Rate by Literacy Rate
 #create total literacy rate variable
 mp_train_EDA <- mp_train %>%
   mutate(lit_rate = (pc11_pca_p_lit) / pc11_pca_tot_p)
@@ -369,9 +400,13 @@ theme_linedraw() +
 labs(
   x = "Literate Proportion of Population",
   y = "Poverty Rate",
-  title = "Poverty Rate by Litercy Rate, Madhya Pradesh",
-  subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
-)
+  title = "Madhya Pradesh") + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  ) +
+  theme_minimal()
 
 #Assam
 plot10 <- as_train_EDA %>%
@@ -381,16 +416,21 @@ theme_linedraw() +
 labs(
   x = "Literate Proportion of Population",
   y = "Poverty Rate",
-  title = "Poverty Rate by Literacy Rate, Assam",
-  subtitle = "(Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
-)
+  title = "Assam") + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  ) +
+  theme_minimal()
 
 #side-by-side
-plot_combined <- plot9 + plot10
+plot_combined <- plot9 + plot10 +
+  plot_annotation(title = "Literacy Rate vs. Poverty Rate")
 plot_combined
 
 
-#Poverty Rate by Proportion of Agricultural Employment
+#F: Poverty Rate by Proportion of Agricultural Employment
 
 #create var for proportion of workers who are cultivators
 mp_train_EDA <- mp_train %>%
@@ -406,9 +446,13 @@ theme_linedraw() +
 labs(
   x = "Proportion of Workers who are Cultivators",
   y = "Poverty Rate",
-  title = "Poverty Rate by Agricultural Employment, Madhya Pradesh",
-  subtitle = "((Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
-)
+  title = "Madhya Pradesh") + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  ) +
+  theme_minimal()
 
 #Assam
 plot12 <- as_train_EDA %>%
@@ -418,12 +462,17 @@ theme_linedraw() +
 labs(
   x = "Proportion of Workers who are Cultivators",
   y = "Poverty Rate",
-  title = "Poverty Rate by Agricultural Employment, Assam",
-  subtitle = "((Source: 2011 Population Census Abstract, Socioeconomic & Caste Census 2011)"
-)
+  title = "Assam") + 
+  theme(
+    axis.title = element_text(size = 8), 
+    axis.text = element_text(size = 8),
+    plot.title = element_text(size = 10)
+  ) +
+  theme_minimal()
 
 #side-by-side
-plot_combined <- plot11 + plot12
+plot_combined <- plot11 + plot12  +
+  plot_annotation(title = "Agricultural Employment vs. Poverty Rate")
 plot_combined
 ```
 
