@@ -131,7 +131,7 @@ census_abstract <- census_abstract %>%
 
 #create state-specific versions of all four dataframes:
 
-#madhya pradesh
+#madhya pradesh (State Code = 23)
 viirs_data_mp <- viirs_data %>%
   filter(SS == 23)
 secc_cons_mp <- secc_cons %>%
@@ -146,7 +146,7 @@ mp_list <- list(viirs_data_mp, secc_cons_mp, secc_caste_mp, census_abstract_mp) 
 madhya_pradesh <- mp_list %>% 
   reduce(full_join, by='TTTTTT') #merge all data frames together
 
-#assam
+#assam (State Code = 18)
 viirs_data_as <- viirs_data %>%
   filter(SS == 18)
 secc_cons_as <- secc_cons %>%
@@ -197,9 +197,18 @@ mp_test <-
 #Assam: Data cleaning / ML set-up
 
 ```{r}
+
+#checking for missing values merged Assam dataset 
+is_na_assam <- is.na(assam)
+print(is_na_assam)
+
+#There are missing values 
+any_missing_assam <- any(is.na(assam))
+print(any_missing_assam)
+
 #filter to 2012
-#assam_v3 <- assam_v2 %>%
-#  filter(year == 2012)
+assam <- assam %>%
+ filter(year == 2012)
 
 #create testing and training datasets 
 set.seed(12152023)
@@ -564,15 +573,22 @@ file.remove("shrid2_open_ja.shx")
 
 
 ```{r}
-as_train <-
-  as_train %>%
-  select(-c(year, shrid2.x, shrid2.x.x, shrid2.y, shrid2.y.y, TTTTTT))
-```
+# Assam: Since lasso was giving error message for vars with 0 variance, this is to check which vars have 0 variance
 
-```{r}
-as_test <-
-  as_test %>%
-  select(-c(year, shrid2.x, shrid2.x.x, shrid2.y, shrid2.y.y, TTTTTT))
+#near_zero_vars <- nearZeroVar(as_train, saveMetrics = TRUE)
+#print(near_zero_vars)
+
+#near_zero_var_names <- names(as_train)[near_zero_vars$zeroVar]
+#print(near_zero_var_names)
+
+# dropping some columns that are not useful and were not working with step_scale()
+#as_train <-
+  #as_train %>%
+  #select(-c(category, SS.x, `_target_weight_share.x`, YY.y, bond_lab_share, `_core_p_miss.y`, `_target_group_max_weight_share.y`, SS.x.x, `_target_group_max_weight_share`, SS.y.y, YY.x, `_core_p_miss.x`, `_target_group_max_weight_share.x`, SS.y, scav_share, `_target_weight_share.y`, YY.x.x, `_target_weight_share`, YY.y.y, year, shrid2.x, shrid2.x.x, shrid2.y, shrid2.y.y, TTTTTT))
+
+#as_test <-
+  #as_test %>%
+  #select(-c(category, SS.x, `_target_weight_share.x`, YY.y, bond_lab_share, `_core_p_miss.y`, `_target_group_max_weight_share.y`, SS.x.x, `_target_group_max_weight_share`, SS.y.y, YY.x, `_core_p_miss.x`, `_target_group_max_weight_share.x`, SS.y, scav_share, `_target_weight_share.y`, YY.x.x, `_target_weight_share`, YY.y.y, year, shrid2.x, shrid2.x.x, shrid2.y, shrid2.y.y, TTTTTT))
 ```
 
 Assam: Model 1 - CART
@@ -580,8 +596,7 @@ Assam: Model 1 - CART
 ```{r}
 
 #Coming up with a recipe for all the Assam models
-as_rec <- recipe(formula = secc_pov_rate_rural ~ ., 
-                 data = as_train) %>%
+as_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = as_train) %>%
   step_zv(all_predictors()) %>%
   step_select(all_numeric()) %>%
   step_center(all_predictors()) %>%
@@ -600,7 +615,7 @@ folds <- vfold_cv(data = as_train, v = 10, repeats = 1)
 #coming up with a cart mod
 cart_mod <-
   decision_tree() %>%
-  set_engine(engine = "rpart") %>%
+  set_engine(engine = "rpart", model = TRUE) %>%
   set_mode(mode = "regression")
 
 #Creating workflow 
@@ -613,12 +628,12 @@ cart_fit <- cart_wf %>%
   fit(data = as_train)
 
 #Creating a tree
-tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit)
+tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit, roundint = FALSE)
 
 ```
 
 ```{r}
-#plotting vip
+#Plotting Variable Importance Plot (VIP)
 cart_fit %>%
 extract_fit_parsnip() %>%
 vip(num_features = 10)
@@ -683,18 +698,19 @@ lm_coefs %>%
 ```
 
 ```{r}
-#checking the correlation between nlight and poverty rate
+#checking the correlation between nlight and poverty rate 
 test <-
   as_train %>%
   filter(!is.na(viirs_annual_mean)) %>%
   filter(!is.na(secc_pov_rate_rural))
-cor(test$viirs_annual_mean, test$secc_pov_rate_rural)
+  cor(test$viirs_annual_mean, test$secc_pov_rate_rural)
 ```
 
-Assam Model 3: LASSO #Juliet Code
+Assam Model 3: LASSO 
 
 ```{r}
 #Lasso model
+
 lasso_grid <- grid_regular(penalty(), levels = 10)
 
 lasso_mod <- linear_reg(
@@ -731,8 +747,7 @@ lasso_coefs <- lasso_final %>%
 library(dplyr)
 #Coefficients for night light
 lasso_coefs %>%
-  filter(term == "viirs_annual_mean") %>%
-  filter(step == 10)
+  filter(Variable == "viirs_annual_mean") 
 
 ```
 
