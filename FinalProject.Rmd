@@ -114,7 +114,7 @@ Supervised Machine Learning Models:
 2) Linear Regression: The easily interpretable linear regression model has been chosen to check if  there is a linear relationship between the poverty and night lights. 
 3) Least Absolute Shrinkage and Selection Operator (LASSO) model: The large number of predictor variables in our final data frame have been eliminated using the LASSO model as it helps in variable selection. 
 
-Note that observations with missing values were omitted from both the Assam and Madhya Pradesh datasets. The reason is to allow the machine learning models to run more smoothly. We are skeptical that this would have much of an effect on results, if any at all, as most variables had at most 5-6% missing data.
+Note that observations with missing values were omitted from both the Assam and Madhya Pradesh data frames. The reason is to allow the machine learning models to run more smoothly. We are skeptical that this would have much of an effect on results, as most variables had at most 5-6% missing data.
 
 POLICY RELEVANCE
 
