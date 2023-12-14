@@ -11,11 +11,36 @@ execute:
 urlcolor: blue
 ---
 
+INTRODUCTION 
+
+Though sustained growth in India since the 1980s has pulled millions of its citizens out of poverty, inequality in the country has steadily grown in recent years. A significant portion of this disparity exists between rural and urban regions, as urban growth has accounted for 80% of the total fall in poverty in the country (UN India 2023). Rather than solely relying on national-level development and growth policies, in order for the country to fulfill its commitment to eradicating poverty it is necessary to develop robust methods of targeting high-poverty areas, especially in rural areas. In order to do this, access to highly geographically-specific information about communities experiencing poverty is essential. 
+
+In this project, we rely on data that allow us to look at poverty indicators at the smallest unit of analysis available in India (‘shrid’-level) to predict areas of high poverty in rural areas. Specifically, we focus on the efficacy of night-time light data as a predictor, which is a proxy for poverty that economists have increasingly relied on in recent years. Using exploratory data analysis, geospatial analysis, and machine learning techniques, we hope to illuminate where resources would be best targeted in the country for decision makers. Further, we hope to reveal some of the implications that this might have, especially in the realm of remediating social inequities, such as for members of scheduled castes. 
+
+LITERATURE REVIEW 
+
+Several scholars have already used night time lights to identify and predict levels of poverty. However, their academic papers often have distinct methodologies compared to one another.
+
+First, geographic units of observation differ between studies. Elvidge et al. (2008) use satellite data to predict levels of poverty in over a hundred countries. Their results are then aggregated into a global estimate for the total number of people living in poverty (Elvidge et al. 2008). Noor et al. (2008), meanwhile, use night time light data to predict levels of poverty in Administrative 1 units (n = 338) in 37 African countries. Wang et al. (2012) predict poverty levels in 31 provinces in China. Lastly, Subash et al. (2018) predict rural poverty rates in states in India.
+
+In much of the literature, the geographic unit of observation is fairly broad. By contrast, Xu et al. (2022) have a much narrower focus: using remote sensing data to identify poverty counties and to predict poverty incidence in the Guizhou province of China.
+
+Second, measures of poverty differ from study to study. Noor et al. (2008), for example, focus on household asset variables. Rather than including lots of variables, the authors use a technique called principal component analysis (PCA) to create an aggregated measure of asset-based poverty (Noor et al. 2008). PCA is a technique for transforming a large set of variables into a smaller one that nevertheless contains most of the information in the larger set. Similarly, Wang et al. (2012) use PCA to combine 17 socioeconomic indexes into an integrated poverty index (IPI). By contrast, Subash et al. (2018) use a much simpler measure, per-capita GDP at the state level, as their dependent variable.
+
+Third, the authors of the studies use very different modeling strategies. Subash et al. (2018), for example, use a machine learning method called an artificial neural network (ANN) to predict rural poverty at the state level. Xu et al. (2022), meanwhile, use support vector machines to classify counties based on levels of poverty, and use regression trees to predict the incidence of poverty in counties.
+
+DATA SOURCES
+
+We relied on data from the open data platform administered by the Development Data Lab. The first dataset we employed in our analysis is the Socio Economic Caste Census of 2012, which includes various household parameters including income, occupation, land ownership, educational attainment, and caste. We also included the 2011 Population Census Abstract, which provides information about the number of households, gender breakdown, and classification of workers. 
+
+For night-time light data, we used the annual global VIIRS nighttime lights, which capture the average light produced each month using satellite data. Finally, for our poverty data, we used SECC Rural consumption data, which include rural consumption and poverty rate estimates from 2011. As discussed above, the Development Data Lab provides these data at the shrid level, meaning that we can analyze these variables at a smaller unit of analysis- the village/town level - which is at a higher-resolution than the Indian government official data sets allow for. 
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Load Packages
+[Load Packages]
 
 ```{r, message = FALSE, warning = FALSE}
 #Loading packages
@@ -76,7 +101,27 @@ drive_auth(
 )
 ```
 
-Load Datasets
+METHODOLOGY
+
+For this study, we have used the Socioeconomic High-resolution Rural-Urban Geographic Platform for India (SHRUG) data, an open data platform looking at socioeconomic development across 600,000 villages and towns in India (Asher et al. 2022). The units of analysis are “shrids” in India, which are typically at the village/town level (specific to SHRUG data). Shrids provide a consistent geographic identifier across space from 1990 to present (Asher et al. 2021). 
+
+We chose to work with four datasets for the analysis: (1) SECC consumption, (2) Night Lights, (3) Social and Economic Caste Census and (4) Census Abstract data. The dependent/prediction variable is secc_pov_rate_rural (taken from the SECC consumption data set). It gives the estimated share of rural households consuming less than 31 INR ($0.37) per day in 2012. The key independent variable is viirs_annual_mean (taken from the night light data set), which is the average night light across rural India in 2012. The predictors (taken from the social and economic caste census and census abstract data sets) include a number of variables on education, employment, housing, wealth, and caste in India. To ensure that the supervised machine learning models work well, we decided to use all variables across the two datasets. 
+
+There are two final data frames (one for each state; Assam and Madhya Pradesh) is a merged dataset is a merged version of the above-mentioned data sets. More information on the data has been provided in the Data Sources section. 
+
+Supervised Machine Learning Models:
+1) Decision Tree Models for Classification
+2) Linear Regression: The easily interpretable linear regression model has been chosen to check if  there is a linear relationship between the poverty and night lights. 
+3) Least Absolute Shrinkage and Selection Operator (LASSO) model: The large number of predictor variables in our final data frame have been eliminated using the LASSO model as it helps in variable selection. 
+
+POLICY RELEVANCE
+
+Our analysis is largely oriented towards two states in India - Assam and Madhya Pradesh. We chose Assam because one-third of the state’s population lives in poverty, and its geographical position in the country means that it is largely removed from the major production centers  (Testbook 2023). Further, the state is one of the most vulnerable in the country to climate change, and therefore assessing which communities in the state are most in need of investment will become increasingly important, as poverty is directly related to climate resilience (Mohady and Wadhawan, 2021). We also chose Madhya Pradesh as it is one of the states with the highest levels of inequality, as measured by the Gini coefficient (Chandrasekhar et al. 2021). 
+
+In both of these contexts, we felt that a machine learning approach would be a helpful tool for decision makers. The granularity of the shrid dataset will hopefully allow for effective targeting, as it illuminates the specific communities that are most in need of resources and investment. Moreover, in assessing the utility of the night time lights dataset in these specific states and using such a small unit of analysis, we hope to be able to contribute an important data point in this literature by either affirming its generalizability or highlighting some of the possible limitations of these data that economists are increasingly relying on as a proxy for economic activity. 
+
+
+[Load Datasets]
 
 ```{r, message = FALSE, warning = FALSE}
 #nightlight (viirs) data
@@ -112,7 +157,7 @@ rm(census_abstract_drive)
 
 ```
 
-Parse Dataframes
+[Parse Dataframes]
 
 ```{r, message = FALSE, warning = FALSE}
 
@@ -138,7 +183,7 @@ census_abstract <- census_abstract %>%
 
 ```
 
-Create merged dataframes for each state
+[Create merged dataframes for each state]
 
 ```{r, message = FALSE, warning = FALSE}
 
@@ -178,7 +223,7 @@ assam <- Reduce(function(x, y) full_join(x, y, by = 'TTTTTT'), as_list)
 assam<- select(assam, -matches("_data2"))
 ```
 
-Madhya Pradesh: Data Cleaning / ML Set-Up
+[Madhya Pradesh: Data Cleaning / ML Set-Up]
 
 ```{r, message = FALSE, warning = FALSE}
 #checking for missing values merged MP dataset 
@@ -210,7 +255,7 @@ mp_test <-
   na.omit()
 ```
 
-Assam: Data Cleaning / ML Set-Up
+[Assam: Data Cleaning / ML Set-Up]
 
 ```{r, message = FALSE, warning = FALSE}
 
@@ -243,7 +288,20 @@ as_test <-
   na.omit()
 ```
 
-Data Visualization w/ Training Dataset
+DATA WRANGLING & VISUALIZATIONS
+
+We performed a series of data visualizations to understand the relationship between poverty and potential key predictors. The predictor variables we selected for this initial exploratory data analysis include: night light distribution, education, scheduled caste/scheduled tribe population , literacy rate, and agricultural employment. The key dependent variable in this visualizations is the shrid-level rural poverty rate, i.e. the percentage of households in the shrid which fall below the poverty lineWe created separate graphs for both study states, and present them side-by-side in panels below. 
+
+The first panel visualizes the distribution of shrid-level rural poverty in each study state using histograms. The distribution of below-poverty line households follows a roughly normal distribution in Madhya Pradesh, while being slightly right-skewed in Assam. In both states, we see that the median proportion of households in poverty at the shrid level is between 40-50%, confirming a significant degree of economic inequality in both states. The second panel plots average annual shrid-level night light radiance against shrid-level rural poverty; it is difficult to discern a meaningful relationship here, the night light values are clustered below 5 units. However, there are outliers in each state; the maximum night light value in Madhya Pradesh is over 35 units, while the maximum night light value in Assam is slightly over 250 units. Outlier night light values are found at varying levels of poverty. 
+
+The third panel illustrates an inverse relationship between middle school graduation rates and shrid poverty rate in both states, which is consistent with established literature on the relationship between education and poverty (Spada et. al 2023). Similarly, the fifth panel illustrates an inverse relationship between poverty and literacy rate in both Madhya Pradesh and Assam.
+
+The fourth panel illustrates the relationship between the proportion of a shrid’s population which belong to a scheduled caste or scheduled tribe community and poverty. In the Madhya Pradesh graph, we see that a higher proportion of scheduled caste/tribe residents corresponds to a higher shrid poverty rate, which is consistent with existing literature which has demonstrated higher poverty rates among scheduled caste/tribe communities (Meenakshi et. al, 2000). Interestingly, the Assam graph does not demonstrate a linear relationship between caste and poverty. Shrid poverty rates in Assam remain fairly constant at around 35% for shrids with anywhere from 25-75% of the population belonging to a scheduled caste/tribe community. Poverty rates are highest at low and high percentages of SC/ST residents, perhaps suggesting that caste-segregated shrids in Assam face more poverty than shrids with more caste integration. 
+
+The final panel illustrates the relationship between shrid poverty rate and agricultural employment. In Madhya Pradesh, shrid poverty rate is inversely related to the percentage of workers who are employed in agriculture until approximately 50%. Past 50% agricultural employment, shrid poverty rate appears to rise. In Assam, the relationship between shrid poverty rate and agricultural is non-linear; while shrids with the highest percentage of agricultural workers have the highest poverty rate, agricultural employment may not be the best predictor of poverty in this state. 
+
+
+[Data Visualization w/ Training Dataset]
 
 ```{r, message = FALSE, warning = FALSE}
 
@@ -501,7 +559,13 @@ plot_combined <- plot11 + plot12  +
 plot_combined
 ```
 
-India (overall): Geospatial Analysis
+GEOSPATIAL ANALYSIS
+
+As we can see from the graph of India below, rural poverty rates appear to be especially high in Northeast India, where Assam is located.
+
+The maps of Assam and Madhya Pradesh illustrate how there is internal variation in rural poverty rates within states. For example, Assam is located in a high-poverty area and yet there are some shrids within it with relatively low poverty rates.
+
+[India (overall): Geospatial Analysis]
 
 ```{r, message = FALSE, warning = FALSE}
 #Reading in shrid shape files
@@ -549,7 +613,7 @@ india_map %>%
        fill = "Rural poverty rate")
 ```
 
-Madhya Pradesh: Geospatial Analysis
+[Madhya Pradesh: Geospatial Analysis]
 
 ```{r, message = FALSE, warning = FALSE}
 #Creating a map like the previous one but filtering
@@ -562,7 +626,7 @@ india_map %>%
        fill = "Rural poverty rate")
 ```
 
-Assam: Geospatial Analysis
+[Assam: Geospatial Analysis]
 
 ```{r, message = FALSE, warning = FALSE}
 #Creating a map like the previous one but filtering
@@ -583,9 +647,31 @@ file.remove("shrid2_open_ja.prj")
 file.remove("shrid2_open_ja.shp")
 file.remove("shrid2_open_ja.shx")
 ```
-Regression
 
-  Assam
+DISCUSSION OF RESULTS
+
+1) Regression
+
+Our team created linear regression and LASSO models to predict rural poverty rates in Assam and Madhya Pradesh. In the next couple of paragraphs, we outline the process used to create the models. We also explain how the models can be used to explain the importance (or lack thereof) of night light data in predicting rural poverty rates.
+
+As you will soon see, night lights appear to be more predictive of rural poverty rates in Madhya Pradesh than in Assam.
+
+A. Assam
+
+We created linear regression and LASSO models to predict rural poverty rates in Assam. Both models use 10-fold cross validation. For both linear regression and LASSO, we selected the models with the smallest RMSE.
+
+The best linear regression model (i.e. the one with the lowest RMSE) is Preprocessor 1 Model 1, with a RMSE of 0.1203944. Meanwhile, the best LASSO model (i.e. the one with the lowest RMSE) is Preprocessor 1 Model 7, with a RMSE of 0.1199653. The best LASSO model includes a penalty of 4.641589e-04.
+
+For the linear regression model, we demonstrated how to get estimated coefficients for viirs_annual_mean, i.e. the night light variable. There are 10 different estimates, one for each of the folds. Most of the coefficients are somewhere between -0.00055 and -0.00070 and have p-values greater than 0.05. We conclude that the effect of night lights in the linear regression models for Assam is not statistically significant.
+
+For the LASSO model, we demonstrated how to find the importance of viirs_annual_mean, i.e. the night light variable. For importance, it has a coefficient of 0.0002283624 and a negative sign. The very small coefficient provides further evidence that night light is not very predictive of rural poverty rates in Assam.
+
+We feel that the LASSO model should be our final model for predicting poverty in Assam. The reason is that it has a slightly smaller RMSE than the linear regression model (0.1199653 vs. 0.1203944).
+
+
+[Regression]
+
+  [Assam]
 
 ```{r, message = FALSE, warning = FALSE}
 # Filter only numeric columns, dropping missing values
@@ -648,7 +734,7 @@ folds <- vfold_cv(data = as_train, v = 10, repeats = 1)
 ```
 
 
-    Model 1: Linear Regression
+    [Model 1: Linear Regression]
 
 ```{r, message = FALSE, warning = FALSE}
 #create model object
@@ -714,7 +800,7 @@ lm_coefs %>%
 #  cor(test$viirs_annual_mean, test$secc_pov_rate_rural)
 ```
 
-    Model 2: LASSO 
+    [Model 2: LASSO]
 
 ```{r, message = FALSE, warning = FALSE}
 #Lasso model
@@ -775,7 +861,7 @@ lasso_coefs <- lasso_final %>%
 lasso_coefs %>%
   filter(Variable == "viirs_annual_mean") 
 ```
-    Assam: Determining best model
+    [Assam: Determining best model]
 
 ```{r, message = FALSE, warning = FALSE}
 bind_rows(
@@ -799,8 +885,21 @@ bind_rows(
 # calculate the rmse on the testing data: 
 #rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 ```
+B. Madhya Pradesh
 
-  Madhya Pradesh
+We created linear regression and LASSO models to predict rural poverty rates in Madhya Pradesh. Both models use 10-fold cross validation. For both linear regression and LASSO, we selected the models with the smallest RMSE.
+
+The best linear regression model (i.e. the one with the lowest RMSE) is Preprocessor 1 Model 1, with a RMSE of 0.1269577. Meanwhile, the best LASSO model (i.e. the one with the lowest RMSE) is Preprocessor 1 Model 6, with a RMSE of 0.1267754. The best LASSO model includes a penalty of 3.593814e-05.
+
+For the linear regression model, we demonstrated how to get estimated coefficients for viirs_annual_mean, i.e. the night light variable. There are 10 different estimates, one for each of the folds. Most of the coefficients are somewhere between -0.0035 and -0.0045 and have p-values smaller than 0.05. 
+
+We conclude that the effect of night lights in the linear regression models for Madhya Pradesh are statistically significant. However, the coefficients are relatively small and so there is reason to think that the results are not substantively significant. In other words, night lights might not be especially predictive of rural poverty rates in Madhya Pradesh, even if results happen to be statistically significant.
+
+For the LASSO model, we demonstrated how to find the importance of viirs_annual_mean, i.e. the night light variable. For importance, it has a coefficient of 0.0005925927 and a negative sign. The very small coefficient provides further evidence that night light is not very predictive of rural poverty rates in Madhya Pradesh.
+
+We feel that the LASSO model should be our final model for predicting poverty in Madhya Pradesh, since the LASSO model has a slightly smaller RMSE than the linear regression model (0.1267754 vs. 0.1269577).
+ 
+  [Madhya Pradesh]
 
 ```{r, message = FALSE, warning = FALSE}
 # Filter only numeric columns, dropping missing values
@@ -843,7 +942,7 @@ folds <- vfold_cv(data = mp_train, v = 10, repeats = 1)
 ```
 
 
-    Model 1: Linear Regression
+    [Model 1: Linear Regression]
 
 ```{r, message = FALSE, warning = FALSE}
 #create model object
@@ -901,7 +1000,7 @@ lm_coefs %>%
   filter(term == "viirs_annual_mean")
 ```
 
-    Model 2: LASSO
+    [Model 2: LASSO]
 
 ```{r, message = FALSE, warning = FALSE}
 #Lasso model
@@ -963,7 +1062,7 @@ lasso_coefs <- lasso_final %>%
 lasso_coefs %>%
   filter(Variable == "viirs_annual_mean") 
 ```
-    Determining best model
+    [Determining best model]
 
 ```{r, message = FALSE, warning = FALSE}
 bind_rows(
@@ -987,10 +1086,25 @@ bind_rows(
 # calculate the rmse on the testing data: 
 #rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 ```
+C) Comparison between Assam and Madhya Pradesh
 
-Classification
+One difference between the two states is that the OLS coefficients for night lights are statistically significant for Madhya Pradesh but are not statistically significant for Assam. This suggests that night lights might be more predictive of rural poverty rates in Madhya Pradesh than in Assam.
+ 
+2) Classification
 
-  Assam
+Our team created decision tree models to predict shrids with rural poverty rates of 50% or greater in Assam and Madhya Pradesh. In the next couple of paragraphs, we outline the process used to create the models. We also explain how the models can be used to explain the importance (or lack thereof) of night light data in predicting rural poverty rates.
+
+The first step was to create a binary variable in both the Assam and Madhya Pradesh data. The variable was assigned a value of “Higher” if the rural poverty rate was 50% or greater and a value of “Lower” if the rural poverty rate was below 50%.
+
+For both the Assam and Madhya Pradesh decision trees, we used night light and the share of households that own land as predictors. We deliberately did not want to include more predictors, so as to more easily assess the effect of night light in decision tree models.
+
+A) Assam
+
+The decision tree model for Assam has an accuracy rate of 71%, which is relatively good. However, both the precision rate (56%) and the recall rate (23%) are relatively poor. The results suggest that the model does a bad job of classifying shrids into “higher” and “lower” poverty categories. Like the regression results, the decision tree results suggest that night lights are not very predictive of rural poverty rates in Assam.
+
+
+[Classification]
+  [Assam]
 
 ```{r, message = FALSE, warning = FALSE}
 #Creating binary variable
@@ -1074,7 +1188,13 @@ estimate = predictions_as$.pred_class)
 
 Recall: 23%
 
-  Madhya Pradesh
+B) Madhya Pradesh
+
+The decision tree model for Madhya Pradesh has an accuracy rate of 71% and a precision rate of 64%, which are decent but not great results. However, it only has a recall rate of 57%.
+
+Importantly, however, the Madhya Pradesh decision tree is better than the Assam decision tree at classifying shrids into “higher” and “lower” poverty categories. Perhaps night lights are more predictive of rural poverty rates in Madhya Pradesh than in Assam (as the regression results also suggest).
+
+  [Madhya Pradesh]
 
 ```{r, message = FALSE, warning = FALSE}
 #Creating binary variable
@@ -1157,7 +1277,7 @@ estimate = predictions_mp$.pred_class)
 
 Recall: 57%
 
-Appendix
+[Appendix]
   Assam: Model 1 - CART
 
 ```{r, message = FALSE, warning = FALSE}
