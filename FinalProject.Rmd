@@ -1,12 +1,23 @@
 ---
-title: "FinalProject"
-output: html_document
-date: "2023-12-06"
+title: "Final Project"
+author: "Alekhya Chaparala, Jacob Ausubel, Juliet Hayes, Saloni Bhatia"
+date: "12/14/23"
+format:
+  html:
+    embed-resources: true
+    self-contained: true
+execute: 
+  warning: false
+urlcolor: blue
 ---
 
-#load packages
-
 ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Load packages
+
+```{r, message = FALSE, warning = FALSE}
 #Loading packages
 library(tidyverse)
 library(readr)
@@ -48,10 +59,11 @@ library(parsnip)
 library(rpart.plot)
 library(patchwork)
 library(purrr)
-#library(rgdal)
+library(rgdal)
 ```
 
-```{r, message = FALSE, warning = FALSE}
+
+```{r}
 #setting up drive 
 drive_auth(
   email = gargle::gargle_oauth_email(),
@@ -64,7 +76,7 @@ drive_auth(
 )
 ```
 
-#load datasets
+#Load datasets
 
 ```{r, message = FALSE, warning = FALSE}
 #nightlight (viirs) data
@@ -100,7 +112,7 @@ rm(census_abstract_drive)
 
 ```
 
-#parse dataframes
+#Parse dataframes
 
 ```{r, message = FALSE, warning = FALSE}
 
@@ -126,7 +138,7 @@ census_abstract <- census_abstract %>%
 
 ```
 
-#create merged dataframes for each state
+#Create merged dataframes for each state
 
 ```{r, message = FALSE, warning = FALSE}
 
@@ -166,16 +178,16 @@ assam <- Reduce(function(x, y) full_join(x, y, by = 'TTTTTT'), as_list)
 assam<- select(assam, -matches("_data2"))
 ```
 
-#madhya pradesh: data cleaning / ML set-up
+#Madhya Pradesh: data cleaning / ML set-up
 
 ```{r, message = FALSE, warning = FALSE}
 #checking for missing values merged MP dataset 
-is_na_madhya_pradesh <- is.na(madhya_pradesh)
-print(is_na_madhya_pradesh)
+#is_na_madhya_pradesh <- is.na(madhya_pradesh)
+#print(is_na_madhya_pradesh)
 
 #There are missing values 
-any_missing_madhya_pradesh <- any(is.na(madhya_pradesh))
-print(any_missing_madhya_pradesh)
+#any_missing_madhya_pradesh <- any(is.na(madhya_pradesh))
+#print(any_missing_madhya_pradesh)
 
 #filter to 2012
 madhya_pradesh <- madhya_pradesh %>%
@@ -203,12 +215,12 @@ mp_test <-
 ```{r, message = FALSE, warning = FALSE}
 
 #checking for missing values merged Assam dataset 
-is_na_assam <- is.na(assam)
-print(is_na_assam)
+#is_na_assam <- is.na(assam)
+#print(is_na_assam)
 
 #There are missing values 
-any_missing_assam <- any(is.na(assam))
-print(any_missing_assam)
+#any_missing_assam <- any(is.na(assam))
+#print(any_missing_assam)
 
 #filter to 2012
 assam <- assam %>%
@@ -571,10 +583,34 @@ file.remove("shrid2_open_ja.prj")
 file.remove("shrid2_open_ja.shp")
 file.remove("shrid2_open_ja.shx")
 ```
+#Regression
 
+##Assam
 
+```{r, message = FALSE, warning = FALSE}
+# Filter only numeric columns, dropping missing values
+as_train <- as_train %>%
+  select_if(is.numeric) %>%
+  na.omit()
 
+as_test <- as_test %>%
+  select_if(is.numeric) %>%
+  na.omit()
+```
 
+```{r, message = FALSE, warning = FALSE}
+#Dropping a few more variables
+as_train <- as_train %>%
+  select(-c(viirs_annual_min, viirs_annual_max, viirs_annual_sum,
+    viirs_annual_num_cells, secc_cons_pc_rural,
+    secc_cons_pc_rural, secc_pov_rate_tend_rural, secc_cons_rural, secc_hh, 
+    `_mean_p_miss.x`, `_mean_p_miss.y`, `_mean_p_miss`))
+as_test <- as_test %>%
+  select(-c(viirs_annual_min, viirs_annual_max, viirs_annual_sum,
+    viirs_annual_num_cells, secc_cons_pc_rural,
+    secc_cons_pc_rural, secc_pov_rate_tend_rural, secc_cons_rural, secc_hh,
+    `_mean_p_miss.x`, `_mean_p_miss.y`, `_mean_p_miss`))
+```
 
 ```{r, message = FALSE, warning = FALSE}
 # Assam: Since lasso was giving error message for vars with 0 variance, this is to check which vars have 0 variance
@@ -595,10 +631,9 @@ file.remove("shrid2_open_ja.shx")
   #select(-c(category, SS.x, `_target_weight_share.x`, YY.y, bond_lab_share, `_core_p_miss.y`, `_target_group_max_weight_share.y`, SS.x.x, `_target_group_max_weight_share`, SS.y.y, YY.x, `_core_p_miss.x`, `_target_group_max_weight_share.x`, SS.y, scav_share, `_target_weight_share.y`, YY.x.x, `_target_weight_share`, YY.y.y, year, shrid2.x, shrid2.x.x, shrid2.y, shrid2.y.y, TTTTTT))
 ```
 
-Assam: Model 1 - CART
+###Model 1 - CART
 
 ```{r, message = FALSE, warning = FALSE}
-
 #Coming up with a recipe for all the Assam models
 as_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = as_train) %>%
   step_zv(all_predictors()) %>%
@@ -606,7 +641,6 @@ as_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = as_train) %>%
   step_center(all_predictors()) %>%
   step_scale(all_predictors()) %>%
   prep()
-
 ```
 
 ```{r, message = FALSE, warning = FALSE}
@@ -633,7 +667,6 @@ cart_fit <- cart_wf %>%
 
 #Creating a tree
 tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit, roundint = FALSE)
-
 ```
 
 ```{r, message = FALSE, warning = FALSE}
@@ -641,10 +674,9 @@ tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit, roundint = FALSE)
 cart_fit %>%
 extract_fit_parsnip() %>%
 vip(num_features = 10)
-
 ```
 
-Assam Model 2: Linear Regression
+###Model 2: Linear Regression
 
 ```{r, message = FALSE, warning = FALSE}
 #create model object
@@ -703,18 +735,17 @@ lm_coefs %>%
 
 ```{r, message = FALSE, warning = FALSE}
 #checking the correlation between nlight and poverty rate 
-test <-
-  as_train %>%
-  filter(!is.na(viirs_annual_mean)) %>%
-  filter(!is.na(secc_pov_rate_rural))
-  cor(test$viirs_annual_mean, test$secc_pov_rate_rural)
+#test <-
+#  as_train %>%
+#  filter(!is.na(viirs_annual_mean)) %>%
+#  filter(!is.na(secc_pov_rate_rural))
+#  cor(test$viirs_annual_mean, test$secc_pov_rate_rural)
 ```
 
-Assam Model 3: LASSO 
+###Model 3: LASSO 
 
 ```{r, message = FALSE, warning = FALSE}
 #Lasso model
-
 lasso_grid <- grid_regular(penalty(), levels = 10)
 
 lasso_mod <- linear_reg(
@@ -734,6 +765,19 @@ lasso_cv <- lasso_wf %>%
     resamples = folds,
     grid = lasso_grid)
 
+#measure RMSE 
+collect_metrics(lasso_cv, summarize = FALSE) %>%
+ filter(.metric == "rmse") %>%
+ ggplot(aes(id, .estimate, group = .estimator)) +
+ geom_line() +
+ geom_point() +
+ scale_y_continuous(limits = c(0, 0.5)) +
+ labs(title = "Calculated RMSE Across the 10 Folds",
+ y = "RMSE_hat") +
+ theme_minimal()
+```
+```{r, message = FALSE, warning = FALSE}
+#selecting model with lowest RMSE
 lasso_best <- lasso_cv %>%
   select_best(metric = "rmse")
 
@@ -748,30 +792,36 @@ lasso_coefs <- lasso_final %>%
   extract_fit_parsnip() %>%
   vi(lambda = lasso_best$penalty) 
 
-library(dplyr)
 #Coefficients for night light
 lasso_coefs %>%
   filter(Variable == "viirs_annual_mean") 
+```
+###Determining best model
 
+```{r, message = FALSE, warning = FALSE}
+bind_rows(
+  `lm` = show_best(lm_cv, metric = "rmse", n = 1),
+  `lasso` = show_best(lasso_cv, metric = "rmse", n = 1),
+  .id = "model")
 ```
 
 ```{r, message = FALSE, warning = FALSE}
 #fitting LASSO on testing data 
-lasso_fit <- lasso_final %>%
-  fit(data = as_test)
+#lasso_fit <- lasso_final %>%
+#  fit(data = as_test)
 
 #create predictions df
-predictions_lasso <-
-  bind_cols(
-    test,
-    stats::predict(object = lasso_fit, new_data = as_test)
-  )
+#predictions_lasso <-
+#  bind_cols(
+#    test,
+#    stats::predict(object = lasso_fit, new_data = as_test)
+#  )
 
 # calculate the rmse on the testing data: 
-rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
+#rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 ```
 
-Madhya Pradesh: Model 1 - CART
+##Madhya Pradesh
 
 ```{r, message = FALSE, warning = FALSE}
 # Filter only numeric columns, dropping missing values
@@ -779,6 +829,28 @@ mp_train <- mp_train %>%
   select_if(is.numeric) %>%
   na.omit()
 
+mp_test <- mp_test %>%
+  select_if(is.numeric) %>%
+  na.omit()
+```
+
+```{r, message = FALSE, warning = FALSE}
+#Dropping a few more variables
+mp_train <- mp_train %>%
+  select(-c(viirs_annual_min, viirs_annual_max, viirs_annual_sum,
+    viirs_annual_num_cells, secc_cons_pc_rural,
+    secc_cons_pc_rural, secc_pov_rate_tend_rural, secc_cons_rural, secc_hh, 
+    `_mean_p_miss.x`, `_mean_p_miss.y`, `_mean_p_miss`))
+mp_test <- mp_test %>%
+  select(-c(viirs_annual_min, viirs_annual_max, viirs_annual_sum,
+    viirs_annual_num_cells, secc_cons_pc_rural,
+    secc_cons_pc_rural, secc_pov_rate_tend_rural, secc_cons_rural, secc_hh,
+    `_mean_p_miss.x`, `_mean_p_miss.y`, `_mean_p_miss`))
+```
+
+###Model 1 - CART
+
+```{r, message = FALSE, warning = FALSE}
 #Coming up with a recipe for all the Madhya Pradesh models
 mp_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = mp_train) %>%
   step_zv(all_predictors()) %>%
@@ -822,7 +894,7 @@ vip(num_features = 10)
 
 ```
 
-Model 2: Linear Regression
+###Model 2: Linear Regression
 
 ```{r, message = FALSE, warning = FALSE}
 #create model object
@@ -883,7 +955,7 @@ lm_coefs %>%
   filter(term == "viirs_annual_mean")
 ```
 
-Model 3: LASSO
+###Model 3: LASSO
 
 ```{r, message = FALSE, warning = FALSE}
 #Lasso model
@@ -906,6 +978,20 @@ lasso_cv <- lasso_wf %>%
     resamples = folds,
     grid = lasso_grid)
 
+#measure RMSE 
+collect_metrics(lasso_cv, summarize = FALSE) %>%
+ filter(.metric == "rmse") %>%
+ ggplot(aes(id, .estimate, group = .estimator)) +
+ geom_line() +
+ geom_point() +
+ scale_y_continuous(limits = c(0, 0.5)) +
+ labs(title = "Calculated RMSE Across the 10 Folds",
+ y = "RMSE_hat") +
+ theme_minimal()
+```
+
+```{r, message = FALSE, warning = FALSE}
+#selecting model with lowest RMSE
 lasso_best <- lasso_cv %>%
   select_best(metric = "rmse")
 
@@ -916,32 +1002,37 @@ lasso_final <- finalize_workflow(
 )
 
 lasso_coefs <- lasso_final %>%
-  fit(data = train) %>%
+  fit(data = as_train) %>%
   extract_fit_parsnip() %>%
-  vi(lambda = lasso_best$penalty)
-
+  vi(lambda = lasso_best$penalty) 
 
 #Coefficients for night light
 lasso_coefs %>%
-  filter(term == "viirs_annual_mean") %>%
-  filter(step == 10)
+  filter(Variable == "viirs_annual_mean") 
+```
+###Determining best model
 
+```{r, message = FALSE, warning = FALSE}
+bind_rows(
+  `lm` = show_best(lm_cv, metric = "rmse", n = 1),
+  `lasso` = show_best(lasso_cv, metric = "rmse", n = 1),
+  .id = "model")
 ```
 
 ```{r, message = FALSE, warning = FALSE}
 #fitting LASSO on testing data 
-lasso_fit <- lasso_final %>%
-  fit(data = mp_test)
+#lasso_fit <- lasso_final %>%
+#  fit(data = as_test)
 
 #create predictions df
-predictions_lasso <-
-  bind_cols(
-    test,
-    stats::predict(object = lasso_fit, new_data = mp_test)
-  )
+#predictions_lasso <-
+#  bind_cols(
+#    test,
+#    stats::predict(object = lasso_fit, new_data = as_test)
+#  )
 
 # calculate the rmse on the testing data: 
-rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
+#rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 ```
 
 #Classification
@@ -1019,7 +1110,7 @@ truth = predictions_as$high_poverty,
 estimate = predictions_as$.pred_class)
 ```
 
-Precision: 57%
+Precision: 56%
 
 ```{r, message = FALSE, warning = FALSE}
 #Calculating recall
@@ -1028,7 +1119,7 @@ truth = predictions_as$high_poverty,
 estimate = predictions_as$.pred_class)
 ```
 
-Recall: 24%
+Recall: 23%
 
 ##Madhya Pradesh
 
