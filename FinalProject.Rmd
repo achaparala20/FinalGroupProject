@@ -59,7 +59,7 @@ library(parsnip)
 library(rpart.plot)
 library(patchwork)
 library(purrr)
-library(rgdal)
+#library(rgdal)
 ```
 
 
@@ -519,7 +519,7 @@ shrid <- st_read("shrid2_open_ja.shp", quiet = TRUE)
 shrid <- st_transform(shrid, crs = 4326)
 
 #Reading in shape file
-shrid_v2 <- readOGR("shrid2_open_ja.shp")
+#shrid_v2 <- readOGR("shrid2_open_ja.shp")
 ```
 
 ```{r, message = FALSE, warning = FALSE}
@@ -631,10 +631,6 @@ as_test <- as_test %>%
   #select(-c(category, SS.x, `_target_weight_share.x`, YY.y, bond_lab_share, `_core_p_miss.y`, `_target_group_max_weight_share.y`, SS.x.x, `_target_group_max_weight_share`, SS.y.y, YY.x, `_core_p_miss.x`, `_target_group_max_weight_share.x`, SS.y, scav_share, `_target_weight_share.y`, YY.x.x, `_target_weight_share`, YY.y.y, year, shrid2.x, shrid2.x.x, shrid2.y, shrid2.y.y, TTTTTT))
 ```
 
-###Model 1 - CART
-
-We should possibly cut this model out.
-
 ```{r, message = FALSE, warning = FALSE}
 #Coming up with a recipe for all the Assam models
 as_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = as_train) %>%
@@ -651,34 +647,8 @@ set.seed(04281998)
 folds <- vfold_cv(data = as_train, v = 10, repeats = 1) 
 ```
 
-```{r, message = FALSE, warning = FALSE}
-#coming up with a cart mod
-cart_mod <-
-  decision_tree() %>%
-  set_engine(engine = "rpart", model = TRUE) %>%
-  set_mode(mode = "regression")
 
-#Creating workflow 
-cart_wf <- workflow() %>%
-  add_recipe(as_rec) %>%
-  add_model(cart_mod)
-
-#Fitting the model
-cart_fit <- cart_wf %>%
-  fit(data = as_train)
-
-#Creating a tree
-tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit, roundint = FALSE)
-```
-
-```{r, message = FALSE, warning = FALSE}
-#Plotting Variable Importance Plot (VIP)
-cart_fit %>%
-extract_fit_parsnip() %>%
-vip(num_features = 10)
-```
-
-###Model 2: Linear Regression
+###Model 1: Linear Regression
 
 ```{r, message = FALSE, warning = FALSE}
 #create model object
@@ -744,7 +714,7 @@ lm_coefs %>%
 #  cor(test$viirs_annual_mean, test$secc_pov_rate_rural)
 ```
 
-###Model 3: LASSO 
+###Model 2: LASSO 
 
 ```{r, message = FALSE, warning = FALSE}
 #Lasso model
@@ -857,10 +827,6 @@ mp_test <- mp_test %>%
     `_mean_p_miss.x`, `_mean_p_miss.y`, `_mean_p_miss`))
 ```
 
-###Model 1 - CART
-
-We should possibly cut this model out.
-
 ```{r, message = FALSE, warning = FALSE}
 #Coming up with a recipe for all the Madhya Pradesh models
 mp_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = mp_train) %>%
@@ -876,36 +842,8 @@ set.seed(04281998)
 folds <- vfold_cv(data = mp_train, v = 10, repeats = 1) 
 ```
 
-```{r, message = FALSE, warning = FALSE}
-#coming up with a cart mod
-cart_mod <-
-  decision_tree() %>%
-  set_engine(engine = "rpart") %>%
-  set_mode(mode = "regression")
 
-#Creating workflow 
-cart_wf <- workflow() %>%
-  add_recipe(mp_rec) %>%
-  add_model(cart_mod)
-
-#Fitting the model
-cart_fit <- cart_wf %>%
-  fit(data = mp_train)
-
-#Creating a tree
-tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit)
-
-```
-
-```{r, message = FALSE, warning = FALSE}
-#plotting vip
-cart_fit %>%
-extract_fit_parsnip() %>%
-vip(num_features = 10)
-
-```
-
-###Model 2: Linear Regression
+###Model 1: Linear Regression
 
 ```{r, message = FALSE, warning = FALSE}
 #create model object
@@ -963,7 +901,7 @@ lm_coefs %>%
   filter(term == "viirs_annual_mean")
 ```
 
-###Model 3: LASSO
+###Model 2: LASSO
 
 ```{r, message = FALSE, warning = FALSE}
 #Lasso model
@@ -1218,3 +1156,63 @@ estimate = predictions_mp$.pred_class)
 ```
 
 Recall: 57%
+
+#Appendix
+##Assam: Model 1 - CART
+
+```{r, message = FALSE, warning = FALSE}
+#coming up with a cart mod
+cart_mod <-
+  decision_tree() %>%
+  set_engine(engine = "rpart", model = TRUE) %>%
+  set_mode(mode = "regression")
+
+#Creating workflow 
+cart_wf <- workflow() %>%
+  add_recipe(as_rec) %>%
+  add_model(cart_mod)
+
+#Fitting the model
+cart_fit <- cart_wf %>%
+  fit(data = as_train)
+
+#Creating a tree
+tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit, roundint = FALSE)
+```
+
+```{r, message = FALSE, warning = FALSE}
+#Plotting Variable Importance Plot (VIP)
+cart_fit %>%
+extract_fit_parsnip() %>%
+vip(num_features = 10)
+```
+
+##MP: Model 1 - CART
+```{r, message = FALSE, warning = FALSE}
+#coming up with a cart mod
+cart_mod <-
+  decision_tree() %>%
+  set_engine(engine = "rpart") %>%
+  set_mode(mode = "regression")
+
+#Creating workflow 
+cart_wf <- workflow() %>%
+  add_recipe(mp_rec) %>%
+  add_model(cart_mod)
+
+#Fitting the model
+cart_fit <- cart_wf %>%
+  fit(data = mp_train)
+
+#Creating a tree
+tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit)
+
+```
+
+```{r, message = FALSE, warning = FALSE}
+#plotting vip
+cart_fit %>%
+extract_fit_parsnip() %>%
+vip(num_features = 10)
+
+```
