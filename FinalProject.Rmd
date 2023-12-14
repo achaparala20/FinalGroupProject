@@ -1336,3 +1336,32 @@ extract_fit_parsnip() %>%
 vip(num_features = 10)
 
 ```
+
+WORKS CITED
+
+Asher, Sam, et al. "Development research at high geographic resolution: an analysis of night-lights, firms, and poverty in India using the shrug open data platform." The World Bank Economic Review 35.4 (2021): 845-871.
+
+Chandrasekhar, S., Ajay Sharma, and Kathikeya Naraparaju (2021). Spatial disparities in household earnings in India. Ideas for India. 
+https://www.ideasforindia.in/topics/poverty-inequality/spatial-disparities-in-household-earnings-in-india.html
+
+Elbers, Chris, Jean O. Lanjouw, and Peter Lanjouw. "Micro-level estimation of poverty and inequality." Econometrica 71.1 (2003): 355-364.
+
+Elvidge, Christopher D., et al. "A global poverty map derived from satellite data." Computers & Geosciences 35.8 (2009): 1652-1660.
+
+Meenakshi, J. V., Ranjan Ray, and Souvik Gupta. "Estimates of poverty for SC, ST and female-headed households." Economic and Political Weekly (2000): 2748-2754.
+
+Mohanty, Abinash and Shreya WadhawanMapping India’s climate vulnerability. (2023, April 24). CEEW. 
+https://www.ceew.in/publications/mapping-climate-change-vulnerability-index-of-india-a-district-level-assessment
+
+Noor, Abdisalan M., et al. "Using remotely sensed night-time light as a proxy for poverty in Africa." Population Health Metrics 6.1 (2008): 1-13.
+
+Spada A, Fiore M, Galati A. The Impact of Education and Culture on Poverty Reduction: Evidence from Panel Data of European Countries. Soc Indic Res. 2023 Jun 14:1-14. doi: 10.1007/s11205-023-03155-0. Epub ahead of print. PMID: 37362180; PMCID: PMC10265551.
+Subash, Surendran Padmaja, Rajeev Ranjan Kumar, and Korekallu Srinivasa Aditya. "Satellite data and machine learning tools for predicting poverty in rural India." Agricultural economics research review 31.2 (2018): 231-240.
+
+Testbook. (2023, July 20). Poorest states in India 2023 – Get list of states by poverty rate Testbook. https://testbook.com/static-gk/poorest-state-in-india
+
+UN India Poverty and urbanisation. (n.d.). India. https://india.un.org/en/171267-poverty-and-urbanisation
+
+Wang, Wen, Hui Cheng, and Li Zhang. "Poverty assessment using DMSP/OLS night-time light satellite imagery at a provincial scale in China." Advances in Space Research 49.8 (2012): 1253-1264.
+
+Xu, Jianbin, et al. "Combining night time lights in prediction of poverty incidence at the county level." Applied Geography 135 (2021): 102552.
