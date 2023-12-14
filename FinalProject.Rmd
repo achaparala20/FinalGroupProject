@@ -801,11 +801,11 @@ lasso_coefs <- lasso_final %>%
   extract_fit_parsnip() %>%
   vi(lambda = lasso_best$penalty) 
 
-#Coefficients for night light
+#Importance of night light variable 
 lasso_coefs %>%
   filter(Variable == "viirs_annual_mean") 
 ```
-###Determining best model
+###Assam: Determining best model
 
 ```{r, message = FALSE, warning = FALSE}
 bind_rows(
@@ -1021,7 +1021,7 @@ lasso_coefs <- lasso_final %>%
   extract_fit_parsnip() %>%
   vi(lambda = lasso_best$penalty) 
 
-#Coefficients for night light
+#Importance of night light variable
 lasso_coefs %>%
   filter(Variable == "viirs_annual_mean") 
 ```
