@@ -7,6 +7,7 @@ date: "2023-12-06"
 #load packages
 
 ```{r setup, include=FALSE}
+#Loading packages
 library(tidyverse)
 library(readr)
 library(googledrive)
@@ -50,7 +51,7 @@ library(purrr)
 #library(rgdal)
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #setting up drive 
 drive_auth(
   email = gargle::gargle_oauth_email(),
@@ -65,8 +66,7 @@ drive_auth(
 
 #load datasets
 
-```{r}
-
+```{r, message = FALSE, warning = FALSE}
 #nightlight (viirs) data
 viirs_drive <- drive_download(file = "viirs_annual_shrid.csv", overwrite = TRUE)
 viirs_data <- read_csv("viirs_annual_shrid.csv")
@@ -102,7 +102,7 @@ rm(census_abstract_drive)
 
 #parse dataframes
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 
 #viirs
 viirs_data <- viirs_data %>%
@@ -128,7 +128,7 @@ census_abstract <- census_abstract %>%
 
 #create merged dataframes for each state
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 
 #create state-specific versions of all four dataframes:
 
@@ -168,7 +168,7 @@ assam<- select(assam, -matches("_data2"))
 
 #madhya pradesh: data cleaning / ML set-up
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #checking for missing values merged MP dataset 
 is_na_madhya_pradesh <- is.na(madhya_pradesh)
 print(is_na_madhya_pradesh)
@@ -200,7 +200,7 @@ mp_test <-
 
 #Assam: Data cleaning / ML set-up
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 
 #checking for missing values merged Assam dataset 
 is_na_assam <- is.na(assam)
@@ -233,7 +233,7 @@ as_test <-
 
 #Data visualization w/training dataset
 
-```{r - Data Visualization}
+```{r, message = FALSE, warning = FALSE}
 
 #A: Histograms of Poverty Rate by State
 
@@ -491,7 +491,7 @@ plot_combined
 
 #India (overall): geospatial analysis
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Reading in shrid shape files
 shrid2_open_cpg_drive <- drive_download(file = "shrid2_open_ja.cpg", overwrite = TRUE)
 shrid2_open_dbf_drive <- drive_download(file = "shrid2_open_ja.dbf", overwrite = TRUE)
@@ -500,7 +500,7 @@ shrid2_open_shp_drive <- drive_download(file = "shrid2_open_ja.shp", overwrite =
 shrid2_open_shx_drive <- drive_download(file = "shrid2_open_ja.shx", overwrite = TRUE)
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Reading in shape file and perform
   #a data transformation
 shrid <- st_read("shrid2_open_ja.shp", quiet = TRUE)
@@ -510,7 +510,7 @@ shrid <- st_transform(shrid, crs = 4326)
 shrid_v2 <- readOGR("shrid2_open_ja.shp")
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Merging together SECC consumption data
 #and shrid boundaries
 secc_merged <- merge(secc_cons, shrid, by = c("shrid2"))
@@ -539,7 +539,7 @@ india_map %>%
 
 #Madhya Pradesh: geospatial analysis
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Creating a map like the previous one but filtering
   #to just shrids in MP
 india_map %>%
@@ -552,7 +552,7 @@ india_map %>%
 
 #Assam: geospatial analysis
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Creating a map like the previous one but filtering
   #to just shrids in Assam
 india_map %>%
@@ -563,7 +563,7 @@ india_map %>%
        fill = "Rural poverty rate")
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Removing files for shape files
 file.remove("shrid2_open_ja.cpg")
 file.remove("shrid2_open_ja.dbf")
@@ -576,7 +576,7 @@ file.remove("shrid2_open_ja.shx")
 
 
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # Assam: Since lasso was giving error message for vars with 0 variance, this is to check which vars have 0 variance
 
 #near_zero_vars <- nearZeroVar(as_train, saveMetrics = TRUE)
@@ -597,7 +597,7 @@ file.remove("shrid2_open_ja.shx")
 
 Assam: Model 1 - CART
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 
 #Coming up with a recipe for all the Assam models
 as_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = as_train) %>%
@@ -609,13 +609,13 @@ as_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = as_train) %>%
 
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #setting seed and v-fold cross-validation
 set.seed(04281998)
 folds <- vfold_cv(data = as_train, v = 10, repeats = 1) 
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #coming up with a cart mod
 cart_mod <-
   decision_tree() %>%
@@ -636,7 +636,7 @@ tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit, roundint = FALSE)
 
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Plotting Variable Importance Plot (VIP)
 cart_fit %>%
 extract_fit_parsnip() %>%
@@ -646,7 +646,7 @@ vip(num_features = 10)
 
 Assam Model 2: Linear Regression
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #create model object
 lm_mod <- linear_reg() %>%
   set_engine("lm")
@@ -682,14 +682,14 @@ collect_metrics(lm_cv, summarize = FALSE) %>%
  theme_minimal()
 ```
 
-```{R}
+```{r, message = FALSE, warning = FALSE}
 #collecting metrics
 metric_table_lm <- collect_metrics(lm_cv, summarize = TRUE)
 metric_table_lm %>%
   filter(.metric == "rmse")
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Getting coefficients
 lm_coefs <- lm_cv %>% 
   select(id, .extracts) %>% 
@@ -701,7 +701,7 @@ lm_coefs %>%
   filter(term == "viirs_annual_mean")
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #checking the correlation between nlight and poverty rate 
 test <-
   as_train %>%
@@ -712,7 +712,7 @@ test <-
 
 Assam Model 3: LASSO 
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Lasso model
 
 lasso_grid <- grid_regular(penalty(), levels = 10)
@@ -755,7 +755,7 @@ lasso_coefs %>%
 
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #fitting LASSO on testing data 
 lasso_fit <- lasso_final %>%
   fit(data = as_test)
@@ -773,7 +773,7 @@ rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 
 Madhya Pradesh: Model 1 - CART
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # Filter only numeric columns, dropping missing values
 mp_train <- mp_train %>%
   select_if(is.numeric) %>%
@@ -787,13 +787,13 @@ mp_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = mp_train) %>%
   prep()
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #setting seed and v-fold cross-validation
 set.seed(04281998)
 folds <- vfold_cv(data = mp_train, v = 10, repeats = 1) 
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #coming up with a cart mod
 cart_mod <-
   decision_tree() %>%
@@ -814,7 +814,7 @@ tree_model <- rpart.plot::rpart.plot(x = cart_fit$fit$fit$fit)
 
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #plotting vip
 cart_fit %>%
 extract_fit_parsnip() %>%
@@ -824,7 +824,7 @@ vip(num_features = 10)
 
 Model 2: Linear Regression
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #create model object
 lm_mod <- linear_reg() %>%
   set_engine("lm")
@@ -864,14 +864,14 @@ collect_metrics(lm_cv, summarize = FALSE) %>%
 
 ```
 
-```{R}
+```{r, message = FALSE, warning = FALSE}
 #collecting metrics
 metric_table_lm <- collect_metrics(lm_cv, summarize = TRUE)
 metric_table_lm %>%
   filter(.metric == "rmse")
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Getting coefficients
 lm_coefs <- lm_cv %>% 
   select(id, .extracts) %>% 
@@ -885,7 +885,7 @@ lm_coefs %>%
 
 Model 3: LASSO
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Lasso model
 lasso_grid <- grid_regular(penalty(), levels = 10)
 
@@ -928,7 +928,7 @@ lasso_coefs %>%
 
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #fitting LASSO on testing data 
 lasso_fit <- lasso_final %>%
   fit(data = mp_test)
@@ -948,7 +948,7 @@ rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 
 ##Assam
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Creating binary variable
 #1: 50%+ of rural households in poverty, 0: under 50% of rural households in poverty
 as_train$high_poverty <-
@@ -957,13 +957,13 @@ as_test$high_poverty <-
   ifelse(as_test$secc_pov_rate_rural >= 0.5, "Higher", "Lower")
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Making high_poverty variable factors
 as_train$high_poverty <- as.factor(as_train$high_poverty)
 as_test$high_poverty <- as.factor(as_test$high_poverty)
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # create a recipe
 cart_rec_as <-
   recipe(formula = high_poverty ~ viirs_annual_mean + land_own_share, data = as_train)
@@ -981,12 +981,12 @@ cart_fit_classification_as <-
   fit(data = as_train)
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Visualizing decision tree
 rpart.plot::rpart.plot(x = cart_fit_classification_as$fit$fit$fit)
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Adding predicted values and probabilities
   #as columns to testing dataset
 predictions_as <- bind_cols(
@@ -996,13 +996,14 @@ predictions_as <- bind_cols(
 )
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Creating confusion matrix
 conf_mat(data = predictions_as,
 truth = high_poverty,
 estimate = .pred_class)
 ```
-```{r}
+
+```{r, message = FALSE, warning = FALSE}
 #Calculating accuracy
 accuracy(data = predictions_as,
 truth = high_poverty,
@@ -1011,7 +1012,7 @@ estimate = .pred_class)
 
 Accuracy: 71%
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Calculating precision
 precision_vec(data = predictions_as,
 truth = predictions_as$high_poverty,
@@ -1020,7 +1021,7 @@ estimate = predictions_as$.pred_class)
 
 Precision: 57%
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Calculating recall
 recall_vec(data = predictions_as,
 truth = predictions_as$high_poverty,
@@ -1031,7 +1032,7 @@ Recall: 24%
 
 ##Madhya Pradesh
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Creating binary variable
 #1: 50%+ of rural households in poverty, 0: under 50% of rural households in poverty
 mp_train$high_poverty <-
@@ -1040,13 +1041,13 @@ mp_test$high_poverty <-
   ifelse(mp_test$secc_pov_rate_rural >= 0.5, "Higher", "Lower")
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Making high poverty column factors
 mp_train$high_poverty <- as.factor(mp_train$high_poverty)
 mp_test$high_poverty <- as.factor(mp_test$high_poverty)
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # create a recipe
 cart_rec_mp <-
   recipe(formula = high_poverty ~ viirs_annual_mean + land_own_share, data = mp_train)
@@ -1064,12 +1065,12 @@ cart_fit_classification_mp <-
   fit(data = mp_train)
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Visualizing decision tree
 rpart.plot::rpart.plot(x = cart_fit_classification_mp$fit$fit$fit)
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Adding predicted values and probabilities
   #as columns to testing dataset
 predictions_mp <- bind_cols(
@@ -1079,14 +1080,14 @@ predictions_mp <- bind_cols(
 )
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Creating decision tree
 conf_mat(data = predictions_mp,
 truth = high_poverty,
 estimate = .pred_class)
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Calculating accuracy
 accuracy(data = predictions_mp,
 truth = high_poverty,
@@ -1095,7 +1096,7 @@ estimate = .pred_class)
 
 Accuracy: 68%
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #Calculating precision
 precision_vec(data = predictions_mp,
 truth = predictions_mp$high_poverty,
@@ -1104,7 +1105,7 @@ estimate = predictions_mp$.pred_class)
 
 Precision: 64%
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 recall_vec(data = predictions_mp,
 truth = predictions_mp$high_poverty,
 estimate = predictions_mp$.pred_class)
