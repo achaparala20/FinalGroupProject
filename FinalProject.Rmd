@@ -15,7 +15,7 @@ urlcolor: blue
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-#Load packages
+Load Packages
 
 ```{r, message = FALSE, warning = FALSE}
 #Loading packages
@@ -76,7 +76,7 @@ drive_auth(
 )
 ```
 
-#Load datasets
+Load Datasets
 
 ```{r, message = FALSE, warning = FALSE}
 #nightlight (viirs) data
@@ -112,7 +112,7 @@ rm(census_abstract_drive)
 
 ```
 
-#Parse dataframes
+Parse Dataframes
 
 ```{r, message = FALSE, warning = FALSE}
 
@@ -138,7 +138,7 @@ census_abstract <- census_abstract %>%
 
 ```
 
-#Create merged dataframes for each state
+Create merged dataframes for each state
 
 ```{r, message = FALSE, warning = FALSE}
 
@@ -178,7 +178,7 @@ assam <- Reduce(function(x, y) full_join(x, y, by = 'TTTTTT'), as_list)
 assam<- select(assam, -matches("_data2"))
 ```
 
-#Madhya Pradesh: data cleaning / ML set-up
+Madhya Pradesh: Data Cleaning / ML Set-Up
 
 ```{r, message = FALSE, warning = FALSE}
 #checking for missing values merged MP dataset 
@@ -210,7 +210,7 @@ mp_test <-
   na.omit()
 ```
 
-#Assam: Data cleaning / ML set-up
+Assam: Data Cleaning / ML Set-Up
 
 ```{r, message = FALSE, warning = FALSE}
 
@@ -243,7 +243,7 @@ as_test <-
   na.omit()
 ```
 
-#Data visualization w/training dataset
+Data Visualization w/ Training Dataset
 
 ```{r, message = FALSE, warning = FALSE}
 
@@ -501,7 +501,7 @@ plot_combined <- plot11 + plot12  +
 plot_combined
 ```
 
-#India (overall): geospatial analysis
+India (overall): Geospatial Analysis
 
 ```{r, message = FALSE, warning = FALSE}
 #Reading in shrid shape files
@@ -549,7 +549,7 @@ india_map %>%
        fill = "Rural poverty rate")
 ```
 
-#Madhya Pradesh: geospatial analysis
+Madhya Pradesh: Geospatial Analysis
 
 ```{r, message = FALSE, warning = FALSE}
 #Creating a map like the previous one but filtering
@@ -562,7 +562,7 @@ india_map %>%
        fill = "Rural poverty rate")
 ```
 
-#Assam: geospatial analysis
+Assam: Geospatial Analysis
 
 ```{r, message = FALSE, warning = FALSE}
 #Creating a map like the previous one but filtering
@@ -583,9 +583,9 @@ file.remove("shrid2_open_ja.prj")
 file.remove("shrid2_open_ja.shp")
 file.remove("shrid2_open_ja.shx")
 ```
-#Regression
+Regression
 
-##Assam
+  Assam
 
 ```{r, message = FALSE, warning = FALSE}
 # Filter only numeric columns, dropping missing values
@@ -648,7 +648,7 @@ folds <- vfold_cv(data = as_train, v = 10, repeats = 1)
 ```
 
 
-###Model 1: Linear Regression
+    Model 1: Linear Regression
 
 ```{r, message = FALSE, warning = FALSE}
 #create model object
@@ -714,7 +714,7 @@ lm_coefs %>%
 #  cor(test$viirs_annual_mean, test$secc_pov_rate_rural)
 ```
 
-###Model 2: LASSO 
+    Model 2: LASSO 
 
 ```{r, message = FALSE, warning = FALSE}
 #Lasso model
@@ -775,7 +775,7 @@ lasso_coefs <- lasso_final %>%
 lasso_coefs %>%
   filter(Variable == "viirs_annual_mean") 
 ```
-###Assam: Determining best model
+    Assam: Determining best model
 
 ```{r, message = FALSE, warning = FALSE}
 bind_rows(
@@ -800,7 +800,7 @@ bind_rows(
 #rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 ```
 
-##Madhya Pradesh
+  Madhya Pradesh
 
 ```{r, message = FALSE, warning = FALSE}
 # Filter only numeric columns, dropping missing values
@@ -843,7 +843,7 @@ folds <- vfold_cv(data = mp_train, v = 10, repeats = 1)
 ```
 
 
-###Model 1: Linear Regression
+    Model 1: Linear Regression
 
 ```{r, message = FALSE, warning = FALSE}
 #create model object
@@ -901,7 +901,7 @@ lm_coefs %>%
   filter(term == "viirs_annual_mean")
 ```
 
-###Model 2: LASSO
+    Model 2: LASSO
 
 ```{r, message = FALSE, warning = FALSE}
 #Lasso model
@@ -963,7 +963,7 @@ lasso_coefs <- lasso_final %>%
 lasso_coefs %>%
   filter(Variable == "viirs_annual_mean") 
 ```
-###Determining best model
+    Determining best model
 
 ```{r, message = FALSE, warning = FALSE}
 bind_rows(
@@ -988,9 +988,9 @@ bind_rows(
 #rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 ```
 
-#Classification
+Classification
 
-##Assam
+  Assam
 
 ```{r, message = FALSE, warning = FALSE}
 #Creating binary variable
@@ -1074,7 +1074,7 @@ estimate = predictions_as$.pred_class)
 
 Recall: 23%
 
-##Madhya Pradesh
+  Madhya Pradesh
 
 ```{r, message = FALSE, warning = FALSE}
 #Creating binary variable
@@ -1157,8 +1157,8 @@ estimate = predictions_mp$.pred_class)
 
 Recall: 57%
 
-#Appendix
-##Assam: Model 1 - CART
+Appendix
+  Assam: Model 1 - CART
 
 ```{r, message = FALSE, warning = FALSE}
 #coming up with a cart mod
@@ -1187,7 +1187,7 @@ extract_fit_parsnip() %>%
 vip(num_features = 10)
 ```
 
-##MP: Model 1 - CART
+  MP: Model 1 - CART
 ```{r, message = FALSE, warning = FALSE}
 #coming up with a cart mod
 cart_mod <-
