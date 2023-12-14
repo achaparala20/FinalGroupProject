@@ -84,7 +84,7 @@ library(parsnip)
 library(rpart.plot)
 library(patchwork)
 library(purrr)
-#library(rgdal)
+library(rgdal)
 ```
 
 
@@ -116,7 +116,7 @@ Supervised Machine Learning Models:
 
 POLICY RELEVANCE
 
-Our analysis is largely oriented towards two states in India - Assam and Madhya Pradesh. We chose Assam because one-third of the state’s population lives in poverty, and its geographical position in the country means that it is largely removed from the major production centers  (Testbook 2023). Further, the state is one of the most vulnerable in the country to climate change, and therefore assessing which communities in the state are most in need of investment will become increasingly important, as poverty is directly related to climate resilience (Mohady and Wadhawan, 2021). We also chose Madhya Pradesh as it is one of the states with the highest levels of inequality, as measured by the Gini coefficient (Chandrasekhar et al. 2021). 
+Our analysis is largely oriented towards two states in India - Assam and Madhya Pradesh. We chose Assam because one-third of the state’s population lives in poverty, and its geographical position in the country means that it is largely removed from the major production centers (Testbook 2023). Further, the state is one of the most vulnerable in the country to climate change, and therefore assessing which communities in the state are most in need of investment will become increasingly important, as poverty is directly related to climate resilience (Mohady and Wadhawan, 2021). We also chose Madhya Pradesh as it is one of the states with the highest levels of inequality, as measured by the Gini coefficient (Chandrasekhar et al. 2021). 
 
 In both of these contexts, we felt that a machine learning approach would be a helpful tool for decision makers. The granularity of the shrid dataset will hopefully allow for effective targeting, as it illuminates the specific communities that are most in need of resources and investment. Moreover, in assessing the utility of the night time lights dataset in these specific states and using such a small unit of analysis, we hope to be able to contribute an important data point in this literature by either affirming its generalizability or highlighting some of the possible limitations of these data that economists are increasingly relying on as a proxy for economic activity. 
 
@@ -290,7 +290,7 @@ as_test <-
 
 DATA WRANGLING & VISUALIZATIONS
 
-We performed a series of data visualizations to understand the relationship between poverty and potential key predictors. The predictor variables we selected for this initial exploratory data analysis include: night light distribution, education, scheduled caste/scheduled tribe population , literacy rate, and agricultural employment. The key dependent variable in this visualizations is the shrid-level rural poverty rate, i.e. the percentage of households in the shrid which fall below the poverty lineWe created separate graphs for both study states, and present them side-by-side in panels below. 
+We performed a series of data visualizations to understand the relationship between poverty and potential key predictors. The predictor variables we selected for this initial exploratory data analysis include: night light distribution, education, scheduled caste/scheduled tribe population , literacy rate, and agricultural employment. The key dependent variable in this visualizations is the shrid-level rural poverty rate, i.e. the percentage of households in the shrid which fall below the poverty line. We created separate graphs for both study states, and present them side-by-side in panels below. 
 
 The first panel visualizes the distribution of shrid-level rural poverty in each study state using histograms. The distribution of below-poverty line households follows a roughly normal distribution in Madhya Pradesh, while being slightly right-skewed in Assam. In both states, we see that the median proportion of households in poverty at the shrid level is between 40-50%, confirming a significant degree of economic inequality in both states. The second panel plots average annual shrid-level night light radiance against shrid-level rural poverty; it is difficult to discern a meaningful relationship here, the night light values are clustered below 5 units. However, there are outliers in each state; the maximum night light value in Madhya Pradesh is over 35 units, while the maximum night light value in Assam is slightly over 250 units. Outlier night light values are found at varying levels of poverty. 
 
@@ -583,7 +583,7 @@ shrid <- st_read("shrid2_open_ja.shp", quiet = TRUE)
 shrid <- st_transform(shrid, crs = 4326)
 
 #Reading in shape file
-#shrid_v2 <- readOGR("shrid2_open_ja.shp")
+shrid_v2 <- readOGR("shrid2_open_ja.shp")
 ```
 
 ```{r, message = FALSE, warning = FALSE}
@@ -791,15 +791,6 @@ lm_coefs %>%
   filter(term == "viirs_annual_mean")
 ```
 
-```{r, message = FALSE, warning = FALSE}
-#checking the correlation between nlight and poverty rate 
-#test <-
-#  as_train %>%
-#  filter(!is.na(viirs_annual_mean)) %>%
-#  filter(!is.na(secc_pov_rate_rural))
-#  cor(test$viirs_annual_mean, test$secc_pov_rate_rural)
-```
-
     [Model 2: LASSO]
 
 ```{r, message = FALSE, warning = FALSE}
@@ -834,6 +825,7 @@ collect_metrics(lasso_cv, summarize = FALSE) %>%
  y = "RMSE_hat") +
  theme_minimal()
 ```
+
 ```{r, message = FALSE, warning = FALSE}
 #collecting metrics
 metric_table_lasso <- collect_metrics(lasso_cv, summarize = TRUE)
@@ -861,6 +853,7 @@ lasso_coefs <- lasso_final %>%
 lasso_coefs %>%
   filter(Variable == "viirs_annual_mean") 
 ```
+    
     [Assam: Determining best model]
 
 ```{r, message = FALSE, warning = FALSE}
@@ -885,6 +878,7 @@ bind_rows(
 # calculate the rmse on the testing data: 
 #rmse(data = predictions_lasso, truth = secc_pov_rate_rural, estimate = .pred)
 ```
+
 B. Madhya Pradesh
 
 We created linear regression and LASSO models to predict rural poverty rates in Madhya Pradesh. Both models use 10-fold cross validation. For both linear regression and LASSO, we selected the models with the smallest RMSE.
