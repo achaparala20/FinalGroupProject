@@ -46,6 +46,7 @@ library(randomForest)
 library(parsnip)
 library(rpart.plot)
 library(patchwork)
+library(purrr)
 #library(rgdal)
 ```
 
@@ -142,9 +143,9 @@ census_abstract_mp <- census_abstract %>%
   filter(SS == 23)
 
 #merge madhya pradesh data-frames
-mp_list <- list(viirs_data_mp, secc_cons_mp, secc_caste_mp, census_abstract_mp) #put all data frames into list   
-madhya_pradesh <- mp_list %>% 
-  reduce(full_join, by='TTTTTT') #merge all data frames together
+mp_list <- list(viirs_data_mp, secc_cons_mp, secc_caste_mp, census_abstract_mp)
+
+madhya_pradesh <- Reduce(function(x, y) full_join(x, y, by = 'TTTTTT'), mp_list)
 
 #assam (State Code = 18)
 viirs_data_as <- viirs_data %>%
@@ -157,9 +158,12 @@ census_abstract_as <- census_abstract %>%
   filter(SS == 18)
 
 #merge assam data-frames
-as_list <- list(viirs_data_as, secc_cons_as, secc_caste_as, census_abstract_as) #put all data frames into list   
-assam <- as_list %>% 
-  reduce(full_join, by='TTTTTT') #merge all data frames together
+as_list <- list(viirs_data_as, secc_cons_as, secc_caste_as, census_abstract_as)
+assam <- Reduce(function(x, y) full_join(x, y, by = 'TTTTTT'), as_list)
+ #merge all data frames together
+
+#remove duplicates
+assam<- select(assam, -matches("_data2"))
 ```
 
 #madhya pradesh: data cleaning / ML set-up
@@ -778,7 +782,6 @@ mp_train <- mp_train %>%
 #Coming up with a recipe for all the Madhya Pradesh models
 mp_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = mp_train) %>%
   step_zv(all_predictors()) %>%
-  step_select(all_numeric()) %>%
   step_center(all_predictors()) %>%
   step_scale(all_predictors()) %>%
   prep()
@@ -915,7 +918,7 @@ lasso_final <- finalize_workflow(
 lasso_coefs <- lasso_final %>%
   fit(data = train) %>%
   extract_fit_parsnip() %>%
-  vi(lambda = lasso_best$penalty) 
+  vi(lambda = lasso_best$penalty)
 
 
 #Coefficients for night light
