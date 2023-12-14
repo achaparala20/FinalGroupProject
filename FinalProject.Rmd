@@ -114,6 +114,8 @@ Supervised Machine Learning Models:
 2) Linear Regression: The easily interpretable linear regression model has been chosen to check if  there is a linear relationship between the poverty and night lights. 
 3) Least Absolute Shrinkage and Selection Operator (LASSO) model: The large number of predictor variables in our final data frame have been eliminated using the LASSO model as it helps in variable selection. 
 
+Note that observations with missing values were omitted from both the Assam and Madhya Pradesh datasets. The reason is to allow the machine learning models to run more smoothly. We are skeptical that this would have much of an effect on results, if any at all, as most variables had at most 5-6% missing data.
+
 POLICY RELEVANCE
 
 Our analysis is largely oriented towards two states in India - Assam and Madhya Pradesh. We chose Assam because one-third of the state’s population lives in poverty, and its geographical position in the country means that it is largely removed from the major production centers (Testbook 2023). Further, the state is one of the most vulnerable in the country to climate change, and therefore assessing which communities in the state are most in need of investment will become increasingly important, as poverty is directly related to climate resilience (Mohady and Wadhawan, 2021). We also chose Madhya Pradesh as it is one of the states with the highest levels of inequality, as measured by the Gini coefficient (Chandrasekhar et al. 2021). 
@@ -1330,6 +1332,14 @@ extract_fit_parsnip() %>%
 vip(num_features = 10)
 
 ```
+
+CONCLUSION
+
+In conclusion, night lights are a better predictor of rural poverty rates and categorization in Madhya Pradesh than in Assam. However, it is not a great predictor in even the Madhya Pradesh models.
+
+One limitation of our analysis is that it just looks at two states in India. Perhaps there are states in which night light is a better predictor of rural poverty than in either Assam or Madhya Pradesh. Another shortcoming is that we are limited to a single measure of rural poverty (i.e., the share of rural households consuming less than 31 INR per day in 2012).
+
+One area for future research is to use night lights to predict other measures of rural poverty and/or consumption. We might want to look at the whole country of India, not just two states.
 
 WORKS CITED
 
