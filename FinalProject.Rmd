@@ -633,6 +633,8 @@ as_test <- as_test %>%
 
 ###Model 1 - CART
 
+We should possibly cut this model out.
+
 ```{r, message = FALSE, warning = FALSE}
 #Coming up with a recipe for all the Assam models
 as_rec <- recipe(formula = secc_pov_rate_rural ~ ., data = as_train) %>%
@@ -777,6 +779,13 @@ collect_metrics(lasso_cv, summarize = FALSE) %>%
  theme_minimal()
 ```
 ```{r, message = FALSE, warning = FALSE}
+#collecting metrics
+metric_table_lasso <- collect_metrics(lasso_cv, summarize = TRUE)
+metric_table_lasso %>%
+  filter(.metric == "rmse")
+```
+
+```{r, message = FALSE, warning = FALSE}
 #selecting model with lowest RMSE
 lasso_best <- lasso_cv %>%
   select_best(metric = "rmse")
@@ -849,6 +858,8 @@ mp_test <- mp_test %>%
 ```
 
 ###Model 1 - CART
+
+We should possibly cut this model out.
 
 ```{r, message = FALSE, warning = FALSE}
 #Coming up with a recipe for all the Madhya Pradesh models
@@ -931,9 +942,6 @@ collect_metrics(lm_cv, summarize = FALSE) %>%
  labs(title = "Calculated RMSE Across the 10 Folds",
  y = "RMSE_hat") +
  theme_minimal()
-
-
-
 ```
 
 ```{r, message = FALSE, warning = FALSE}
@@ -988,6 +996,13 @@ collect_metrics(lasso_cv, summarize = FALSE) %>%
  labs(title = "Calculated RMSE Across the 10 Folds",
  y = "RMSE_hat") +
  theme_minimal()
+```
+
+```{r, message = FALSE, warning = FALSE}
+#collecting metrics
+metric_table_lasso <- collect_metrics(lasso_cv, summarize = TRUE)
+metric_table_lasso %>%
+  filter(.metric == "rmse")
 ```
 
 ```{r, message = FALSE, warning = FALSE}
